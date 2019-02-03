@@ -26,8 +26,7 @@ namespace StravaStatisticsAnalyzer
                             {"elapsed_time","INTEGER"},
                             {"avg_speed", "DOUBLE"},
                             {"max_speed", "DOUBLE"},
-                            {"date", "DATE"},
-                            {"time", "TIME"},
+                            {"date_time", "DATETIME"},
                             {"athlete_id", "BIGINT"},
                             {"total_elevation_gain","DOUBLE"}, 
                             {"elev_high","DOUBLE"},
@@ -76,8 +75,7 @@ namespace StravaStatisticsAnalyzer
                             {"distance","DOUBLE"},
                             {"moving_time","INTEGER"},
                             {"elapsed_time","INTEGER"},
-                            {"date", "DATE"},
-                            {"time", "TIME"},
+                            {"date_time", "DATETIME"},
                         };
                 }                
             }

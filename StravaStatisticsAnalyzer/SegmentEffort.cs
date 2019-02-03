@@ -24,8 +24,7 @@ namespace StravaStatisticsAnalyzer
         #endregion
 
         #region Manipulated Deserialization Properties 
-        public string Date => Start_Date.Substring(0, Start_Date.IndexOf("T"));
-        public string Time => Start_Date.Substring(Start_Date.IndexOf("T") + 1, 8);
+        public string DateTimeStr => Start_Date.Replace("T"," ").Replace("Z", "");
         #endregion
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Extensions;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
@@ -11,14 +12,16 @@ namespace StravaStatisticsAnalyzer
         private MySql.Data.MySqlClient.MySqlConnection connection_;
         private string connectionString_;
         private bool createNewTables_= false;
+        private HashSet<long> insertedSegments_;
 
         public bool Initialize()
         {
-           if(InitializeConnection())
-           {
-               return InitializeTables();
-           }
-           return false;
+            insertedSegments_ = new HashSet<long>();
+            if(InitializeConnection())
+            {
+                return InitializeTables();
+            }
+            return false;
         }
 
         public void Shutdown()
@@ -27,7 +30,49 @@ namespace StravaStatisticsAnalyzer
             connection_.Close();
         }
 
-        #region Insert
+      
+        public int GetLastUpdate()
+        {
+            var command = connection_.CreateCommand();
+            command.CommandText = $"SELECT date_time FROM {Configuration.MySQL.Tables.Activity.NAME} ORDER BY date_time DESC";
+            var reader = command.ExecuteReader();
+            if(reader.Read())
+            {
+                var dateTime = reader.GetDateTime(0);
+                reader.Close();
+                return dateTime.ToEpoch();
+            }
+            reader.Close();
+            return -1;
+        }
+
+        public List<(long id, int moving_time, double avg_speed, DateTime dateTime)> GetActivities(string activityName, int? maxInterval)
+        {
+            var list = new List<(long id, int moving_time, double avg_speed, DateTime dateTime)>();
+            var command = connection_.CreateCommand();
+            command.CommandText = 
+                $"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}";
+            MySqlDataReader reader = null;
+            try
+            {
+                reader = command.ExecuteReader();
+                while(reader.Read())
+                {
+                    list.Add((reader.GetInt64("id"), reader.GetInt32("moving_time"),reader.GetDouble("avg_speed"), reader.GetDateTime("date_time")));
+                }
+            }
+            catch(MySqlException ex)
+            {
+                Console.WriteLine($"Unable to read '{activityName}' activities");
+                Console.WriteLine($"Command - {command.CommandText}");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
+            reader?.Close();
+            return list;
+        }
+
+         #region Insert
 
         public bool Insert(List<Activity> activities)
         {
@@ -41,7 +86,7 @@ namespace StravaStatisticsAnalyzer
 
         public bool Insert(List<Segment> segments)
         {
-            return InsertObjects(segments,Insert);
+            return InsertObjects(segments,Insert,insertedSegments_);
         }
 
         public bool Insert(Activity activity)
@@ -55,8 +100,7 @@ namespace StravaStatisticsAnalyzer
                 command.Parameters.AddWithValue("@elapsed_time", obj.Elapsed_Time);
                 command.Parameters.AddWithValue("@avg_speed", obj.Average_Speed);
                 command.Parameters.AddWithValue("@max_speed", obj.Max_Speed);
-                command.Parameters.AddWithValue("@date", obj.Date);
-                command.Parameters.AddWithValue("@time", obj.Time);
+                command.Parameters.AddWithValue("@date_time", obj.DateTimeStr);
                 command.Parameters.AddWithValue("@athlete_id", obj.Athlete.Id);
                 command.Parameters.AddWithValue("@total_elevation_gain", obj.Total_Elevation_Gain);
                 command.Parameters.AddWithValue("@elev_high", obj.Elev_High);
@@ -84,8 +128,7 @@ namespace StravaStatisticsAnalyzer
                 command.Parameters.AddWithValue("@distance", obj.Distance);
                 command.Parameters.AddWithValue("@moving_time", obj.Moving_Time);
                 command.Parameters.AddWithValue("@elapsed_time", obj.Elapsed_Time);
-                command.Parameters.AddWithValue("@date", obj.Date);
-                command.Parameters.AddWithValue("@time", obj.Time);
+                command.Parameters.AddWithValue("@date_time", obj.DateTimeStr);
             };
             return InsertObjectIntoTable(segmentEffort, insertAct, Configuration.MySQL.Tables.SegmentEffort.COLUMNS, 
                 Configuration.MySQL.Tables.SegmentEffort.NAME); 
@@ -112,18 +155,33 @@ namespace StravaStatisticsAnalyzer
                 Configuration.MySQL.Tables.Segment.NAME); 
         }
 
+        private bool InsertObjects<T>(List<T> objs, Func<T,bool> insertFunc, HashSet<long> existingObjs) where T : IStravaObject
+        {
+            foreach(var obj in objs.Where(o => !existingObjs.Contains(o.Id)))
+            {
+                if(!insertFunc(obj))
+                {
+                    return false;
+                }
+                else
+                {
+                    existingObjs.Add(obj.Id);
+                }
+            }
+            return true;
+        }
+
         private bool InsertObjects<T>(List<T> objs, Func<T,bool> insertFunc) where T : IStravaObject
         {
             foreach(var obj in objs)
             {
                 if(!insertFunc(obj))
                 {
-                    break;
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
-
 
         private bool InsertObjectIntoTable<T>(T obj, Action<T,MySqlCommand> createCommand, Dictionary<string,string> cols, string tableName) where T : IStravaObject
         {
@@ -139,11 +197,11 @@ namespace StravaStatisticsAnalyzer
                     Console.WriteLine($"Successfully added {tableName} {obj.Name} ({obj.Id})");
                     return true;
                 }
-                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id}");
+                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
             }
             catch(MySqlException ex)
             {
-                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id}");
+                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
                 Console.WriteLine(command.ToString());
                 Console.WriteLine(command.CommandText);
                 Console.WriteLine(ex.Message);
@@ -238,12 +296,9 @@ namespace StravaStatisticsAnalyzer
             var cmd = new MySqlCommand($"DROP TABLE {tableName}", connection_);
             try 
             {
-                if(cmd.ExecuteNonQuery() > 0)
-                {
-                    Console.WriteLine($"Successfully dropped table {tableName}");
-                    return true;
-                }
-                Console.WriteLine($"Unable to drop table {tableName}");
+                cmd.ExecuteNonQuery();
+                Console.WriteLine($"Successfully dropped table {tableName}");
+                return true;
             }
             catch(MySqlException ex)
             {

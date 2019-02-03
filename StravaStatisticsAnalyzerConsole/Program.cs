@@ -2,8 +2,10 @@
 using System.Net;
 using System.Net.Http;
 using System.Linq;
+using System.Extensions;
 using System.Collections.Generic; 
 using StravaStatisticsAnalyzer;
+
 
 namespace StravaStatisticsAnalyzerConsole
 {
@@ -62,7 +64,20 @@ namespace StravaStatisticsAnalyzerConsole
 
             var analyzer = new Analyzer();
             analyzer.Initialize(deserializedResponse.AccessToken);
-            analyzer.GetAndSaveActivities();            
+            // analyzer.GetAndSaveNewActivities();     
+            var intervals = new [] {5,30, Int32.MaxValue};
+            var rides = new [] {"HFW","WFH"};
+            foreach(var ride in rides)
+            {
+                Console.WriteLine($"========= Analysis of {ride} =========");
+                var results = analyzer.AnalyzeRide(ride, intervals);    
+                foreach(var kvp in results)
+                {
+                    Console.WriteLine($"In {(kvp.Key != Int32.MaxValue ? $"the last {kvp.Key}" : "all")} rides for '{ride}', your best ride was {kvp.Value.time.Best.ToTime()} @ {kvp.Value.speed.Best *3.6} km/h.");
+                    Console.WriteLine($"The average ride in this interval was {kvp.Value.time.Average.ToTime()} @ {kvp.Value.speed.Average *3.6} km/h.");
+                    Console.WriteLine("----------------------------------------------------------");
+                }
+            }
         } 
     }
 }
