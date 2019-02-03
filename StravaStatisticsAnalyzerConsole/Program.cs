@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Linq;
 using System.Collections.Generic; 
+using StravaStatisticsAnalyzer;
 
 namespace StravaStatisticsAnalyzerConsole
 {
@@ -20,7 +21,7 @@ namespace StravaStatisticsAnalyzerConsole
             listener.Start();
 
             var targetAuthUrl =  
-                $"https://www.strava.com/oauth/authorize?client_id={Config.CLIENT_ID}&redirect_uri=http://localhost:{Config.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:write,read";
+                $"https://www.strava.com/oauth/authorize?client_id={Config.CLIENT_ID}&redirect_uri=http://localhost:{Config.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:read";
 
             Console.WriteLine($"Attempting to access {targetAuthUrl}");
 
@@ -56,6 +57,12 @@ namespace StravaStatisticsAnalyzerConsole
             var responseText = responseReadTask.Result;
 
             Console.WriteLine($"{responseText}");
+            var deserializedResponse = AuthenticationResponse.Deserialize(responseText);
+            Console.WriteLine($"Welcome {deserializedResponse.Athlete?.FirstName}! Your token is {deserializedResponse.AccessToken}.");
+
+            var analyzer = new Analyzer();
+            analyzer.Initialize(deserializedResponse.AccessToken);
+            analyzer.GetAndSaveActivities();            
         } 
     }
 }
