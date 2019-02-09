@@ -46,9 +46,9 @@ namespace StravaStatisticsAnalyzer
             return -1;
         }
 
-        public List<(long id, int moving_time, double avg_speed, DateTime dateTime)> GetActivities(string activityName, int? maxInterval)
+        public List<IRideEffort> GetActivities(string activityName, int? maxInterval)
         {
-            var list = new List<(long id, int moving_time, double avg_speed, DateTime dateTime)>();
+            var list = new List<IRideEffort>();
             var command = connection_.CreateCommand();
             command.CommandText = 
                 $"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}";
@@ -58,7 +58,7 @@ namespace StravaStatisticsAnalyzer
                 reader = command.ExecuteReader();
                 while(reader.Read())
                 {
-                    list.Add((reader.GetInt64("id"), reader.GetInt32("moving_time"),reader.GetDouble("avg_speed"), reader.GetDateTime("date_time")));
+                    list.Add(new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")));
                 }
             }
             catch(MySqlException ex)
@@ -72,7 +72,7 @@ namespace StravaStatisticsAnalyzer
             return list;
         }
 
-         #region Insert
+        #region Insert
 
         public bool Insert(List<Activity> activities)
         {

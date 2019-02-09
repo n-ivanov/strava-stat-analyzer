@@ -4,17 +4,7 @@ using System.Collections.Generic;
 
 namespace StravaStatisticsAnalyzer
 {
-    public struct AverageBest<T> where T: struct
-    {
-        public T Average {get; set;}
-        public T Best {get; set;}
 
-        public AverageBest(T average, T best)
-        {
-            Average = average;
-            Best = best;
-        }
-    }
 
     public class Analyzer
     {
@@ -56,7 +46,7 @@ namespace StravaStatisticsAnalyzer
             }
         }
 
-        public Dictionary<int,(AverageBest<double> speed, AverageBest<int> time)> AnalyzeRide(string rideName, int[] intervals)
+        public List<IRideEffortAnalysis> AnalyzeRide(string rideName, int[] intervals)
         {
             int? maxInterval = intervals.Max();
             if(maxInterval == Int32.MaxValue)
@@ -64,36 +54,10 @@ namespace StravaStatisticsAnalyzer
                 maxInterval = null;
             }
             var activities = dbWriter_.GetActivities(rideName, maxInterval);
-            double speedSum = 0;
-            double bestSpeed = 0;
-            int timeSum = 0;
-            int bestTime = Int32.MaxValue;
-            int intervalIdx = 0;
-            var results = new Dictionary<int,(AverageBest<double> speed, AverageBest<int> time)>();
-            for(int i = 0; i < activities.Count; i++)
+            var results = new List<IRideEffortAnalysis>();
+            foreach(var interval in intervals)
             {
-                var activity = activities[i];
-                if(activity.avg_speed > bestSpeed)
-                {
-                    bestSpeed = activity.avg_speed;
-                }
-                if(activity.moving_time < bestTime)
-                {
-                    bestTime = activity.moving_time;
-                }
-                speedSum += activity.avg_speed;
-                timeSum += activity.moving_time;
-                if(i == intervals[intervalIdx] - 1)
-                {
-                    results.Add(intervals[intervalIdx], 
-                        (new AverageBest<double>(speedSum/intervals[intervalIdx], bestSpeed), new AverageBest<int>(timeSum/intervals[intervalIdx], bestTime))); 
-                    intervalIdx++;
-                }
-                else if(intervals[intervalIdx] == Int32.MaxValue && i == activities.Count - 1)
-                {
-                    results.Add(intervals[intervalIdx], 
-                        (new AverageBest<double>(speedSum/activities.Count, bestSpeed), new AverageBest<int>(timeSum/activities.Count, bestTime))); 
-                }
+                results.Add(new RideEffortAnalysis(rideName, activities.GetRange(0, Math.Min(interval, activities.Count))));
             }
             return results;
         }

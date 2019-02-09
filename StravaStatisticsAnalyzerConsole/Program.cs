@@ -41,6 +41,13 @@ namespace StravaStatisticsAnalyzerConsole
                 Console.WriteLine($"{kvp.Key}:{kvp.Value}");
             }
 
+            if(returnedArgs.TryGetValue("error", out var error))
+            {
+                Console.WriteLine($"An error occurred. '{error}'");
+                Console.WriteLine("Aborting program execution.");
+                return;
+            }
+
             var requestVals = new Dictionary<string,string>
             {
                 {"client_id", Config.CLIENT_ID.ToString()},
@@ -64,17 +71,18 @@ namespace StravaStatisticsAnalyzerConsole
 
             var analyzer = new Analyzer();
             analyzer.Initialize(deserializedResponse.AccessToken);
-            // analyzer.GetAndSaveNewActivities();     
+            analyzer.GetAndSaveNewActivities();     
             var intervals = new [] {5,30, Int32.MaxValue};
             var rides = new [] {"HFW","WFH"};
             foreach(var ride in rides)
             {
                 Console.WriteLine($"========= Analysis of {ride} =========");
                 var results = analyzer.AnalyzeRide(ride, intervals);    
-                foreach(var kvp in results)
+                foreach(var result in results)
                 {
-                    Console.WriteLine($"In {(kvp.Key != Int32.MaxValue ? $"the last {kvp.Key}" : "all")} rides for '{ride}', your best ride was {kvp.Value.time.Best.ToTime()} @ {kvp.Value.speed.Best *3.6} km/h.");
-                    Console.WriteLine($"The average ride in this interval was {kvp.Value.time.Average.ToTime()} @ {kvp.Value.speed.Average *3.6} km/h.");
+                    Console.WriteLine($"In {result.IntervalLength} rides for '{ride}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
+                    Console.WriteLine($"The average ride in this interval was {Convert.ToInt32(result.Time.Average).ToTime()} @ {result.Speed.Average *3.6} km/h.");
+                    Console.WriteLine($"The worst ride in this interval was {Convert.ToInt32(result.Time.Maximum).ToTime()} @ {result.Speed.Minimum *3.6} km/h.");
                     Console.WriteLine("----------------------------------------------------------");
                 }
             }
