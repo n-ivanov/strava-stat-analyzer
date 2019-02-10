@@ -71,8 +71,8 @@ namespace StravaStatisticsAnalyzerConsole
 
             var analyzer = new Analyzer();
             analyzer.Initialize(deserializedResponse.AccessToken);
-            analyzer.GetAndSaveNewActivities();     
-            var intervals = new [] {5,30, Int32.MaxValue};
+            // analyzer.GetAndSaveNewActivities();     
+            var intervals = new [] {5, Int32.MaxValue};
             var rides = new [] {"HFW","WFH"};
             foreach(var ride in rides)
             {
@@ -80,7 +80,7 @@ namespace StravaStatisticsAnalyzerConsole
                 var results = analyzer.AnalyzeRide(ride, intervals);    
                 foreach(var result in results)
                 {
-                    Console.WriteLine($"In {result.IntervalLength} rides for '{ride}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
+                    Console.WriteLine($"In {result.IntervalLength} rides for '{result.Name}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
                     Console.WriteLine($"The average ride in this interval was {Convert.ToInt32(result.Time.Average).ToTime()} @ {result.Speed.Average *3.6} km/h.");
                     Console.WriteLine($"The worst ride in this interval was {Convert.ToInt32(result.Time.Maximum).ToTime()} @ {result.Speed.Minimum *3.6} km/h.");
                     Console.WriteLine("----------------------------------------------------------");

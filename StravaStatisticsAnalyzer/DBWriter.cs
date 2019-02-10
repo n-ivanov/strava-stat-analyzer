@@ -30,7 +30,8 @@ namespace StravaStatisticsAnalyzer
             connection_.Close();
         }
 
-      
+        #region Fetcher 
+
         public int GetLastUpdate()
         {
             var command = connection_.CreateCommand();
@@ -46,24 +47,89 @@ namespace StravaStatisticsAnalyzer
             return -1;
         }
 
+        public Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, int? maxInterval)
+        {
+            var ids = GetSegmentIdsForActivity(activityName);
+            var segmentNamesById = SqlQuery<long,string>
+            (
+                $"SELECT name,id FROM segment WHERE id in ({String.Join(",", ids)})",
+                "Unable to fetch names for segments",
+                r => r.GetInt64("id"),
+                r => r.GetString("name")
+            );
+            var res = new Dictionary<string,List<IRideEffort>>();
+            foreach(var id in ids)
+            {
+                var segmentEfforts = GetSegmentEffortsForSegment(id, maxInterval);
+                if(segmentEfforts.Count > 0)
+                {
+                    res.Add(segmentNamesById[id], segmentEfforts);
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to get segmenet efforts for {segmentNamesById[id]}");
+                }
+            }
+            return res;
+        }
+
+        private List<IRideEffort> GetSegmentEffortsForSegment(long segmentId, int? max)
+        {
+            return SqlQuery<IRideEffort>(
+                $@"SELECT id,moving_time,distance,date_time FROM 
+                    segment_effort WHERE segment_id = {segmentId} ORDER BY date_time DESC {(max.HasValue ? "LIMIT {max.Value}" : "")};",
+                $"Unable to fetch segment efforts for segment {segmentId}",
+                (reader) => 
+                {
+                    var movingTime = reader.GetInt32("moving_time");
+                    var distance = reader.GetDouble("distance");
+                    var speed = distance / movingTime;
+                    return new RideEffort(reader.GetInt64("id"), speed, movingTime, reader.GetDateTime("date_time"));
+                }
+            );
+        }
+
+        public List<long> GetSegmentIdsForActivity(string activityName)
+        {
+            var segmentsWithCount = SqlQuery<(long id, int count)>(
+                $@"SELECT id,count FROM  
+                    ((SELECT segment_id AS id,count(*) AS count FROM segment_effort WHERE activity_id IN 
+                        (SELECT id from activity WHERE name like '{activityName}'
+                    )
+                    group by segment_id) as segment_by_count) ORDER BY count DESC;",
+                $"Unable to fetch segments for '{activityName}'",
+                (reader => (reader.GetInt64("id"), reader.GetInt32("count")))
+            );
+            var averageCount = segmentsWithCount.Select(i => i.count).Average();
+            return segmentsWithCount.Where(i => i.count >= averageCount).Select(i => i.id).ToList();
+        }       
+
         public List<IRideEffort> GetActivities(string activityName, int? maxInterval)
         {
-            var list = new List<IRideEffort>();
+            return SqlQuery<IRideEffort>(
+                $"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}",
+                $"Unable to read '{activityName}' activities",
+                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")))
+            );
+        }
+
+        private List<T> SqlQuery<T>(string commandText, string errorMessage, Func<MySqlDataReader,T> createElementFunc)
+        {
+            var list = new List<T>();
             var command = connection_.CreateCommand();
-            command.CommandText = 
-                $"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}";
+            command.CommandText = commandText;
             MySqlDataReader reader = null;
             try
             {
                 reader = command.ExecuteReader();
                 while(reader.Read())
                 {
-                    list.Add(new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")));
+                    list.Add(createElementFunc(reader));
                 }
             }
             catch(MySqlException ex)
             {
-                Console.WriteLine($"Unable to read '{activityName}' activities");
+                Console.WriteLine(errorMessage);
                 Console.WriteLine($"Command - {command.CommandText}");
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
@@ -71,6 +137,34 @@ namespace StravaStatisticsAnalyzer
             reader?.Close();
             return list;
         }
+
+        private Dictionary<TKey,TValue> SqlQuery<TKey,TValue>(string commandText, string errorMessage, 
+            Func<MySqlDataReader,TKey> createKeyFunc, Func<MySqlDataReader,TValue> createValueFunc)
+        {
+            var dict = new Dictionary<TKey,TValue> ();
+            var command = connection_.CreateCommand();
+            command.CommandText = commandText;
+            MySqlDataReader reader = null;
+            try
+            {
+                reader = command.ExecuteReader();
+                while(reader.Read())
+                {
+                    dict[createKeyFunc(reader)] = createValueFunc(reader);
+                }
+            }
+            catch(MySqlException ex)
+            {
+                Console.WriteLine(errorMessage);
+                Console.WriteLine($"Command - {command.CommandText}");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
+            reader?.Close();
+            return dict;
+        }
+
+        #endregion
 
         #region Insert
 

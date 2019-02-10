@@ -4,8 +4,6 @@ using System.Collections.Generic;
 
 namespace StravaStatisticsAnalyzer
 {
-
-
     public class Analyzer
     {
         Fetcher fetcher_;
@@ -58,6 +56,14 @@ namespace StravaStatisticsAnalyzer
             foreach(var interval in intervals)
             {
                 results.Add(new RideEffortAnalysis(rideName, activities.GetRange(0, Math.Min(interval, activities.Count))));
+            }
+            var segmentEfforts = dbWriter_.GetSegmentEffortsForActivity(rideName, maxInterval);
+            foreach(var interval in intervals)
+            {
+                foreach(var kvp in segmentEfforts)
+                {
+                    results.Add(new RideEffortAnalysis(kvp.Key, kvp.Value.GetRange(0, Math.Min(interval, kvp.Value.Count))));
+                }
             }
             return results;
         }

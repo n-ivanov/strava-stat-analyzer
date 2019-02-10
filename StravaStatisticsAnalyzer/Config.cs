@@ -77,7 +77,7 @@ namespace StravaStatisticsAnalyzer
                             {"elapsed_time","INTEGER"},
                             {"date_time", "DATETIME"},
                         };
-                }                
+                }               
             }
         }
     }

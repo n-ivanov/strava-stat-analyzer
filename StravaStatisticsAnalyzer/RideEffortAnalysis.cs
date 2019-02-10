@@ -23,6 +23,7 @@ namespace StravaStatisticsAnalyzer
 
         public RideEffortAnalysis(string name, List<IRideEffort> rides)
         {
+            Name = name;
             Rides = rides;
             Speed = new DoubleStatisticalAnalysis(rides.Select(r => r.AverageSpeed).ToList());
             Time = new IntegerStatisticalAnalysis(rides.Select(r => r.MovingTime).ToList());
