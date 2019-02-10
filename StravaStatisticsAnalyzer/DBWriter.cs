@@ -67,7 +67,7 @@ namespace StravaStatisticsAnalyzer
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to get segmenet efforts for {segmentNamesById[id]}");
+                    Console.WriteLine($"Failed to get segment efforts for {segmentNamesById[id]}");
                 }
             }
             return res;
@@ -77,7 +77,7 @@ namespace StravaStatisticsAnalyzer
         {
             return SqlQuery<IRideEffort>(
                 $@"SELECT id,moving_time,distance,date_time FROM 
-                    segment_effort WHERE segment_id = {segmentId} ORDER BY date_time DESC {(max.HasValue ? "LIMIT {max.Value}" : "")};",
+                    segment_effort WHERE segment_id = {segmentId} ORDER BY date_time DESC {(max.HasValue ? $"LIMIT {max.Value}" : "")};",
                 $"Unable to fetch segment efforts for segment {segmentId}",
                 (reader) => 
                 {

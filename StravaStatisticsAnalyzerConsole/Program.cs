@@ -5,19 +5,60 @@ using System.Linq;
 using System.Extensions;
 using System.Collections.Generic; 
 using StravaStatisticsAnalyzer;
-
+using CommandLine;
 
 namespace StravaStatisticsAnalyzerConsole
 {
+    public class Options
+    {
+        [Option('u', "update", HelpText = "Check for updates from Strava, which requires authenticating with the Strava API using OAuth.")]
+        public bool Update {get; set;}
+
+        [Option('i', "intervals", Separator = ',', HelpText = "Intervals over which rides should be analyzed.")]
+        public IEnumerable<int> Intervals { get; set; }
+
+        [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be analyzed.")]
+        public IEnumerable<string> Rides {get; set;}
+
+        // [Option('v', "verbose", HelpText = "Verbose logging (Currently unimplemented)")]
+        // public bool Verbose {get; set;}
+    }
+
     class Program
     {
         static readonly HttpClient client_ = new HttpClient();
+        static Analyzer analyzer_ = new Analyzer();
+
         static void Main(string[] args)
         {
             Console.WriteLine(" o__  ");
             Console.WriteLine(",>/_ ");
             Console.WriteLine("(*)`(*)");
 
+            Options options = null;
+            Parser.Default.ParseArguments<Options>(args)
+                   .WithParsed<Options>(o =>
+                   {
+                       options = o;
+                   });
+
+            string token = null;
+            if(options.Update)
+            {
+                token = Authenticate();
+            }
+           
+            analyzer_.Initialize(token);
+            if(options.Update)
+            {
+                analyzer_.GetAndSaveNewActivities();     
+            }
+
+            Analyze(options.Rides, options.Intervals);
+        } 
+
+        private static string Authenticate()
+        {
             var listener = new HttpListener();
             listener.Prefixes.Add($"http://localhost:{Config.LOCAL_SERVER_PORT}/");
             listener.Start();
@@ -45,7 +86,7 @@ namespace StravaStatisticsAnalyzerConsole
             {
                 Console.WriteLine($"An error occurred. '{error}'");
                 Console.WriteLine("Aborting program execution.");
-                return;
+                return null;
             }
 
             var requestVals = new Dictionary<string,string>
@@ -68,24 +109,31 @@ namespace StravaStatisticsAnalyzerConsole
             Console.WriteLine($"{responseText}");
             var deserializedResponse = AuthenticationResponse.Deserialize(responseText);
             Console.WriteLine($"Welcome {deserializedResponse.Athlete?.FirstName}! Your token is {deserializedResponse.AccessToken}.");
+            return deserializedResponse.AccessToken;
+        }
 
-            var analyzer = new Analyzer();
-            analyzer.Initialize(deserializedResponse.AccessToken);
-            // analyzer.GetAndSaveNewActivities();     
-            var intervals = new [] {5, Int32.MaxValue};
-            var rides = new [] {"HFW","WFH"};
+        private static void Analyze(IEnumerable<string> rides, IEnumerable<int> intervals)
+        {
+            if(rides == null || rides.Count() == 0)
+            {
+                Console.WriteLine("No rides specified. Analysis will not be conducted.");
+                return;
+            }
+            var presenter = new ConsoleResultPresenter();
+            var intervalsArr = intervals.ToArray();
             foreach(var ride in rides)
             {
-                Console.WriteLine($"========= Analysis of {ride} =========");
-                var results = analyzer.AnalyzeRide(ride, intervals);    
-                foreach(var result in results)
-                {
-                    Console.WriteLine($"In {result.IntervalLength} rides for '{result.Name}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
-                    Console.WriteLine($"The average ride in this interval was {Convert.ToInt32(result.Time.Average).ToTime()} @ {result.Speed.Average *3.6} km/h.");
-                    Console.WriteLine($"The worst ride in this interval was {Convert.ToInt32(result.Time.Maximum).ToTime()} @ {result.Speed.Minimum *3.6} km/h.");
-                    Console.WriteLine("----------------------------------------------------------");
-                }
+                var results = analyzer_.AnalyzeRide(ride, intervals.ToArray()); 
+                presenter.PresentResults(results, intervalsArr);
+                Console.WriteLine();
+                // foreach(var kvp in results)
+                // {
+                //     Console.WriteLine($"In {result.IntervalLength} rides for '{result.Name}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
+                //     Console.WriteLine($"The average ride in this interval was {Convert.ToInt32(result.Time.Average).ToTime()} @ {result.Speed.Average *3.6} km/h.");
+                //     Console.WriteLine($"The worst ride in this interval was {Convert.ToInt32(result.Time.Maximum).ToTime()} @ {result.Speed.Minimum *3.6} km/h.");
+                //     Console.WriteLine("----------------------------------------------------------");
+                // }
             }
-        } 
-    }
+        }
+    }   
 }
