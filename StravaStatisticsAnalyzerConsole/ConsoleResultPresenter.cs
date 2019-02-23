@@ -6,16 +6,10 @@ using StravaStatisticsAnalyzer;
 
 namespace StravaStatisticsAnalyzerConsole
 {
-    public interface IResultPresenter 
-    {
-        void PresentResults(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, int[] intervals);
-    }
-
-
     public class ConsoleResultPresenter : IResultPresenter
     {
         private const int RIDE_NAME_COL_WIDTH = -30;
-        private const int DATA_COL_WIDTH = 18;
+        private const int DATA_COL_WIDTH = 20;
 
         private const int METERS_PER_KILOMETER = 1000;
         private const int SECONDS_PER_HOUR = 3600;
@@ -28,7 +22,7 @@ namespace StravaStatisticsAnalyzerConsole
             var countAnalyses = exampleListEnumerator.Current.Count;
             var rideName = exampleListEnumerator.Current[0].Name;
             
-            var mainColWidths = new int[1 + countAnalyses * intervals.Length];
+            var mainColWidths = new int[1 + 2 * intervals.Length];
             mainColWidths[0] = RIDE_NAME_COL_WIDTH * -1;
             for(int i = 1; i < mainColWidths.Length; i++)
             {
@@ -79,8 +73,8 @@ namespace StravaStatisticsAnalyzerConsole
         private string CreateHeaders(int numAnalyses, int[] intervals)
         {
             StringBuilder header = new StringBuilder();
-            var aggregateColWidth = numAnalyses * DATA_COL_WIDTH + 1;
-            var mainColWidths = new int[1 + numAnalyses * intervals.Length];
+            var aggregateColWidth = numAnalyses * (DATA_COL_WIDTH + 1) - 1;
+            var mainColWidths = new int[1 + 2 * intervals.Length];
             mainColWidths[0] = RIDE_NAME_COL_WIDTH * -1;
             for(int i = 1; i < mainColWidths.Length; i++)
             {
@@ -90,8 +84,8 @@ namespace StravaStatisticsAnalyzerConsole
             var midLine = CreateLineWithIntersections(mainColWidths);
             header.AppendLine(topLine);
             header.Append($"|{"",RIDE_NAME_COL_WIDTH}");
-            header.Append($"|{"Average (hh:mm:ss @ km/h)".PadBoth(aggregateColWidth)}");
-            header.Append($"|{"Best (hh:mm:ss @ km/h)".PadBoth(aggregateColWidth)}");
+            header.Append($"|{"Avg (time @ km/h)".PadBoth(aggregateColWidth)}");
+            header.Append($"|{"Best (time @ km/h)".PadBoth(aggregateColWidth)}");
             header.Append($"|{System.Environment.NewLine}");
             header.AppendLine(midLine);
             header.Append($"|{"Ride/Segment Name",RIDE_NAME_COL_WIDTH}");
