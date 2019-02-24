@@ -51,8 +51,10 @@ namespace StravaStatisticsAnalyzer.Web
                 .AddCookie()
                 .AddOAuth("Strava", options =>
                 {
-                    options.ClientId = Web.Configuration.Strava.CLIENT_ID.ToString();
-                    options.ClientSecret = Web.Configuration.Strava.CLIENT_SECRET;
+                    var config = Configuration.GetSection("Strava").Get<StravaConfig>();
+                    
+                    options.ClientId = config.ClientId;
+                    options.ClientSecret = config.ClientSecret;
                     options.CallbackPath = new PathString("/signin-strava");
 
                     options.AuthorizationEndpoint = "https://www.strava.com/oauth/authorize";
