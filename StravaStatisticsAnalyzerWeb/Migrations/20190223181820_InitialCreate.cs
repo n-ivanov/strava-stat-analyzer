@@ -8,7 +8,7 @@ namespace StravaStatisticsAnalyzer.Web.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "ActivityEffort",
+                name: "Activity",
                 columns: table => new
                 {
                     ID = table.Column<long>(nullable: false)
@@ -33,14 +33,14 @@ namespace StravaStatisticsAnalyzer.Web.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ActivityEffort", x => x.ID);
+                    table.PrimaryKey("PK_Activity", x => x.ID);
                 });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ActivityEffort");
+                name: "Activity");
         }
     }
 }

@@ -8,7 +8,7 @@ using StravaStatisticsAnalyzer.Web.Models;
 
 namespace StravaStatisticsAnalyzer.Web.Migrations
 {
-    [DbContext(typeof(RazorPagesActivityEffortContext))]
+    [DbContext(typeof(RazorPagesActivityContext))]
     [Migration("20190223181820_InitialCreate")]
     partial class InitialCreate
     {
@@ -18,7 +18,7 @@ namespace StravaStatisticsAnalyzer.Web.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "2.2.2-servicing-10034");
 
-            modelBuilder.Entity("StravaStatisticsAnalyzer.Web.Models.ActivityEffort", b =>
+            modelBuilder.Entity("StravaStatisticsAnalyzer.Web.Models.Activity", b =>
                 {
                     b.Property<long>("ID")
                         .ValueGeneratedOnAdd();
@@ -59,7 +59,7 @@ namespace StravaStatisticsAnalyzer.Web.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ActivityEffort");
+                    b.ToTable("Activity");
                 });
 #pragma warning restore 612, 618
         }

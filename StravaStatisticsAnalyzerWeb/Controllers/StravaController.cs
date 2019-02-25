@@ -10,8 +10,8 @@ namespace StravaStatisticsAnalyzer.Web
     [Route("[controller]/[action]")]
     public class StravaController : ControllerBase
     {
-        private RazorPagesActivityEffortContext context_;
-        public StravaController(RazorPagesActivityEffortContext context)
+        private RazorPagesActivityContext context_;
+        public StravaController(RazorPagesActivityContext context)
         {
             context_ = context;
         }
@@ -28,7 +28,7 @@ namespace StravaStatisticsAnalyzer.Web
             {
                 foreach(var activity in await client.GetAllActivities(null,1534982400))
                 {
-                    context_.ActivityEffort.Add(activity);
+                    context_.Activity.Add(activity);
                 }
                 context_.SaveChanges();
             }
@@ -37,7 +37,7 @@ namespace StravaStatisticsAnalyzer.Web
                 Console.WriteLine("An error occurred adding activities to the DB.");
             }
 
-            return Redirect("../ActivityEfforts");
+            return Redirect("../Activities");
         }
     }
 }

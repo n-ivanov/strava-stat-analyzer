@@ -1,0 +1,114 @@
+@page
+@model StravaStatisticsAnalyzer.Web.Pages.Activities.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Activity</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-dang er"></div>
+            <div class="form-group">
+                <label asp-for="Activity.Name" class="control-label"></label>
+                <input asp-for="Activity.Name" class="form-control" />
+                <span asp-validation-for="Activity.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.Distance" class="control-label"></label>
+                <input asp-for="Activity.Distance" class="form-control" />
+                <span asp-validation-for="Activity.Distance" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.MovingTime" class="control-label"></label>
+                <input asp-for="Activity.MovingTime" class="form-control" />
+                <span asp-validation-for="Activity.MovingTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.ElapsedTime" class="control-label"></label>
+                <input asp-for="Activity.ElapsedTime" class="form-control" />
+                <span asp-validation-for="Activity.ElapsedTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.AvgSpeed" class="control-label"></label>
+                <input asp-for="Activity.AvgSpeed" class="form-control" />
+                <span asp-validation-for="Activity.AvgSpeed" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.MaxSpeed" class="control-label"></label>
+                <input asp-for="Activity.MaxSpeed" class="form-control" />
+                <span asp-validation-for="Activity.MaxSpeed" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.DateTime" class="control-label"></label>
+                <input asp-for="Activity.DateTime" class="form-control" />
+                <span asp-validation-for="Activity.DateTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.AthleteID" class="control-label"></label>
+                <input asp-for="Activity.AthleteID" class="form-control" />
+                <span asp-validation-for="Activity.AthleteID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.TotalElevationGain" class="control-label"></label>
+                <input asp-for="Activity.TotalElevationGain" class="form-control" />
+                <span asp-validation-for="Activity.TotalElevationGain" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.ElevationHigh" class="control-label"></label>
+                <input asp-for="Activity.ElevationHigh" class="form-control" />
+                <span asp-validation-for="Activity.ElevationHigh" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.ElevationLow" class="control-label"></label>
+                <input asp-for="Activity.ElevationLow" class="form-control" />
+                <span asp-validation-for="Activity.ElevationLow" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.StartLatitude" class="control-label"></label>
+                <input asp-for="Activity.StartLatitude" class="form-control" />
+                <span asp-validation-for="Activity.StartLatitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.StartLongitude" class="control-label"></label>
+                <input asp-for="Activity.StartLongitude" class="form-control" />
+                <span asp-validation-for="Activity.StartLongitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.EndLatitude" class="control-label"></label>
+                <input asp-for="Activity.EndLatitude" class="form-control" />
+                <span asp-validation-for="Activity.EndLatitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.EndLongitude" class="control-label"></label>
+                <input asp-for="Activity.EndLongitude" class="form-control" />
+                <span asp-validation-for="Activity.EndLongitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Activity.Description" class="control-label"></label>
+                <input asp-for="Activity.Description" class="form-control" />
+                <span asp-validation-for="Activity.Description" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Activity.Commute" /> @Html.DisplayNameFor(model => model.Activity.Commute))
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -88,8 +88,8 @@ namespace StravaStatisticsAnalyzer.Web
                     };
                 });
 
-            services.AddDbContext<RazorPagesActivityEffortContext>(options => 
-                options.UseSqlite(Configuration.GetConnectionString("ActivityEffortContext")));
+            services.AddDbContext<RazorPagesActivityContext>(options => 
+                options.UseSqlite(Configuration.GetConnectionString("ActivityContext")));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }

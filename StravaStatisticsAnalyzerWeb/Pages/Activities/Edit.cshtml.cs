@@ -8,19 +8,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using StravaStatisticsAnalyzer.Web.Models;
 
-namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
+namespace StravaStatisticsAnalyzer.Web.Pages.Activities
 {
     public class EditModel : PageModel
     {
-        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext _context;
+        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext _context;
 
-        public EditModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext context)
+        public EditModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext context)
         {
             _context = context;
         }
 
         [BindProperty]
-        public ActivityEffort ActivityEffort { get; set; }
+        public Activity Activity { get; set; }
 
         public async Task<IActionResult> OnGetAsync(long? id)
         {
@@ -29,9 +29,9 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
                 return NotFound();
             }
 
-            ActivityEffort = await _context.ActivityEffort.FirstOrDefaultAsync(m => m.ID == id);
+            Activity = await _context.Activity.FirstOrDefaultAsync(m => m.ID == id);
 
-            if (ActivityEffort == null)
+            if (Activity == null)
             {
                 return NotFound();
             }
@@ -45,7 +45,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
                 return Page();
             }
 
-            _context.Attach(ActivityEffort).State = EntityState.Modified;
+            _context.Attach(Activity).State = EntityState.Modified;
 
             try
             {
@@ -53,7 +53,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ActivityEffortExists(ActivityEffort.ID))
+                if (!ActivityExists(Activity.ID))
                 {
                     return NotFound();
                 }
@@ -66,9 +66,9 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
             return RedirectToPage("./Index");
         }
 
-        private bool ActivityEffortExists(long id)
+        private bool ActivityExists(long id)
         {
-            return _context.ActivityEffort.Any(e => e.ID == id);
+            return _context.Activity.Any(e => e.ID == id);
         }
     }
 }

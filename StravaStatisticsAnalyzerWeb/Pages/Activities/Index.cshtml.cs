@@ -7,22 +7,22 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StravaStatisticsAnalyzer.Web.Models;
 
-namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
+namespace StravaStatisticsAnalyzer.Web.Pages.Activities
 {
     public class IndexModel : PageModel
     {
-        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext _context;
+        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext _context;
 
-        public IndexModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext context)
+        public IndexModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext context)
         {
             _context = context;
         }
 
-        public IList<ActivityEffort> ActivityEffort { get;set; }
+        public IList<Activity> Activity { get;set; }
 
         public async Task OnGetAsync()
         {
-            ActivityEffort = await _context.ActivityEffort.ToListAsync();
+            Activity = await _context.Activity.ToListAsync();
         }
     }
 }

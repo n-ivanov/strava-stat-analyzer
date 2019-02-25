@@ -21,7 +21,7 @@ namespace StravaStatisticsAnalyzer.Web
             authenticationToken_ = authenticationToken;
         }
 
-        public async Task<List<ActivityEffort>> GetActivities(int? before = null, int? after = null, int? page = null, int? pageSize = null)
+        public async Task<List<Activity>> GetActivities(int? before = null, int? after = null, int? page = null, int? pageSize = null)
         {
             var request = new RestRequest(Method.GET);
             request.Resource = "/athlete/activities";
@@ -32,7 +32,7 @@ namespace StravaStatisticsAnalyzer.Web
             request.AddNullableParameter("per_page", pageSize);
 
             var cancellationTokenSource = new CancellationTokenSource();
-            var response = await restClient_.ExecuteGetTaskAsync<List<ActivityEffort>>(request, cancellationTokenSource.Token);
+            var response = await restClient_.ExecuteGetTaskAsync<List<Activity>>(request, cancellationTokenSource.Token);
 
             if(!response.IsSuccessful)
             {
@@ -47,13 +47,13 @@ namespace StravaStatisticsAnalyzer.Web
             return response.Data;
         }
 
-        public async Task<List<ActivityEffort>> GetAllActivities(int? before, int? after)
+        public async Task<List<Activity>> GetAllActivities(int? before, int? after)
         {
             Console.WriteLine($"Fetching all activities {(before.HasValue? $"before {before.Value.FromEpoch()} " : "")}{(after.HasValue ? $"after {after.Value.FromEpoch()}" : "")}."); 
-            List<ActivityEffort> activities = new List<ActivityEffort>();
+            List<Activity> activities = new List<Activity>();
             int page = 1;
             int perList = 50;
-            List<ActivityEffort> partialActivities;
+            List<Activity> partialActivities;
             while((partialActivities = await GetActivities(before, after, page++, perList)) != null && partialActivities.Count != 0)
             {
                 activities.AddRange(partialActivities);   

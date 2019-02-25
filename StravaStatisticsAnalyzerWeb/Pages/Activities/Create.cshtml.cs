@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using StravaStatisticsAnalyzer.Web.Models;
 
-namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
+namespace StravaStatisticsAnalyzer.Web.Pages.Activities
 {
     public class CreateModel : PageModel
     {
-        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext _context;
+        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext _context;
 
-        public CreateModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext context)
+        public CreateModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext context)
         {
             _context = context;
         }
@@ -24,7 +24,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
         }
 
         [BindProperty]
-        public ActivityEffort ActivityEffort { get; set; }
+        public Activity Activity { get; set; }
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -33,7 +33,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
                 return Page();
             }
 
-            _context.ActivityEffort.Add(ActivityEffort);
+            _context.Activity.Add(Activity);
             await _context.SaveChangesAsync();
 
             return RedirectToPage("./Index");

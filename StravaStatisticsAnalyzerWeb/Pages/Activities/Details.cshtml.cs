@@ -7,18 +7,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using StravaStatisticsAnalyzer.Web.Models;
 
-namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
+namespace StravaStatisticsAnalyzer.Web.Pages.Activities
 {
     public class DetailsModel : PageModel
     {
-        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext _context;
+        private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext _context;
 
-        public DetailsModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityEffortContext context)
+        public DetailsModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext context)
         {
             _context = context;
         }
 
-        public ActivityEffort ActivityEffort { get; set; }
+        public Activity Activity { get; set; }
 
         public async Task<IActionResult> OnGetAsync(long? id)
         {
@@ -27,9 +27,9 @@ namespace StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts
                 return NotFound();
             }
 
-            ActivityEffort = await _context.ActivityEffort.FirstOrDefaultAsync(m => m.ID == id);
+            Activity = await _context.Activity.FirstOrDefaultAsync(m => m.ID == id);
 
-            if (ActivityEffort == null)
+            if (Activity == null)
             {
                 return NotFound();
             }

@@ -1,5 +1,5 @@
 @page
-@model StravaStatisticsAnalyzer.Web.Pages.ActivityEfforts.IndexModel
+@model StravaStatisticsAnalyzer.Web.Pages.Activities.IndexModel
 
 @{
     ViewData["Title"] = "Index";
@@ -15,63 +15,63 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].Name)
+                @Html.DisplayNameFor(model => model.Activity[0].Name)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].Distance)
+                @Html.DisplayNameFor(model => model.Activity[0].Distance)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].MovingTime)
+                @Html.DisplayNameFor(model => model.Activity[0].MovingTime)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].ElapsedTime)
+                @Html.DisplayNameFor(model => model.Activity[0].ElapsedTime)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].AvgSpeed)
+                @Html.DisplayNameFor(model => model.Activity[0].AvgSpeed)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].MaxSpeed)
+                @Html.DisplayNameFor(model => model.Activity[0].MaxSpeed)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].DateTime)
+                @Html.DisplayNameFor(model => model.Activity[0].DateTime)
             </th>
             @*
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].AthleteID)
+                @Html.DisplayNameFor(model => model.Activity[0].AthleteID)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].TotalElevationGain)
+                @Html.DisplayNameFor(model => model.Activity[0].TotalElevationGain)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].ElevationHigh)
+                @Html.DisplayNameFor(model => model.Activity[0].ElevationHigh)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].ElevationLow)
+                @Html.DisplayNameFor(model => model.Activity[0].ElevationLow)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].StartLatitude)
+                @Html.DisplayNameFor(model => model.Activity[0].StartLatitude)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].StartLongitude)
+                @Html.DisplayNameFor(model => model.Activity[0].StartLongitude)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].EndLatitude)
+                @Html.DisplayNameFor(model => model.Activity[0].EndLatitude)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].EndLongitude)
+                @Html.DisplayNameFor(model => model.Activity[0].EndLongitude)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].Commute)
+                @Html.DisplayNameFor(model => model.Activity[0].Commute)
             </th>
             *@
             <th>
-                @Html.DisplayNameFor(model => model.ActivityEffort[0].Description)
+                @Html.DisplayNameFor(model => model.Activity[0].Description)
             </th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.ActivityEffort) {
+@foreach (var item in Model.Activity) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Name)

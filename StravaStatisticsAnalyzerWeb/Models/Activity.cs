@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace StravaStatisticsAnalyzer.Web.Models
 {
-    public class ActivityEffort
+    public class Activity
     {
         public long ID {get; set;}
         
