@@ -1,4 +1,5 @@
 @page
+@using System.Extensions
 @model StravaStatisticsAnalyzer.Web.Pages.Activities.IndexModel
 
 @{
@@ -71,7 +72,7 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.Activity) {
+@foreach (var item in Model.Activity.OrderByDescending(item => item.DateTime)) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
@@ -80,10 +81,12 @@
                 @Html.DisplayFor(modelItem => item.Distance)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.MovingTime)
+                @{string convertedMovingTime = item.MovingTime.ToTime();}
+                @Html.DisplayFor(modelItem => convertedMovingTime)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.ElapsedTime)
+                @{string convertedElapsedTime = item.ElapsedTime.ToTime();}
+                @Html.DisplayFor(modelItem => convertedElapsedTime)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.AvgSpeed)

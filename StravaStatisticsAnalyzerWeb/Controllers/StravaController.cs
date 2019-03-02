@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ExtendedStravaClient;
 using StravaStatisticsAnalyzer.Web.Models;
 
 namespace StravaStatisticsAnalyzer.Web
@@ -22,15 +23,12 @@ namespace StravaStatisticsAnalyzer.Web
         {
             string accessToken = await HttpContext.GetTokenAsync("access_token");
             
-            var client = new StravaClient(accessToken);         
+            var client = new Client(new ContextDBFacade(){ActivityContext = context_});
+            client.Initialize(accessToken);         
 
             try
             {
-                foreach(var activity in await client.GetAllActivities(null,1534982400))
-                {
-                    context_.Activity.Add(activity);
-                }
-                context_.SaveChanges();
+                await client.GetAndSaveNewActivities(false);
             }
             catch (Exception ex)
             {
