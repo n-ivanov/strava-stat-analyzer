@@ -52,7 +52,8 @@ namespace StravaStatisticsAnalyzerConsole
             analyzer_.Initialize(token);
             if(options.Update)
             {
-                analyzer_.GetAndSaveNewActivities();     
+                var task = analyzer_.GetAndSaveNewActivities();
+                task.Wait();     
             }
 
             Analyze(options.Rides, options.Intervals);

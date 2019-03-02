@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ExtendedStravaClient
 {
@@ -21,18 +23,18 @@ namespace ExtendedStravaClient
             dbFacade_.Initialize();
         }
 
-        public void GetAndSaveNewActivities()
+        public async Task GetAndSaveNewActivities()
         {
             var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
             {
                 lastUpdate = 1534982400;
             }
-            var activities = fetcher_.GetAllActivities(null, lastUpdate);
+            var activities = await fetcher_.GetAllActivities(null, lastUpdate);
             dbFacade_.Insert(activities);
             foreach(var activity in activities)
             {
-                var detailedActivity = fetcher_.GetDetailedActivity(activity.Id);
+                var detailedActivity = await fetcher_.GetDetailedActivity(activity.Id);
                 // dbFacade_.Update(activity);
                 if(detailedActivity == null)
                 {

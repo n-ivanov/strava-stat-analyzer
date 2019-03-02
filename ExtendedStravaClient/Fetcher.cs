@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Extensions;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using RestSharp;
 using RestSharp.Extensions;
 
@@ -20,14 +22,15 @@ namespace ExtendedStravaClient
             accessToken_ = accessToken;
         }
 
-        public Activity GetDetailedActivity(long id, bool includeAllEfforts = true)
+        public async Task<Activity> GetDetailedActivity(long id, bool includeAllEfforts = true)
         {
             var request = new RestRequest(Method.GET);
             request.Resource = $"/activities/{id}";
             request.AddHeader("Authorization", $"Bearer {accessToken_}");
             request.AddParameter("include_all_efforts",true);
 
-            var response = restClient_.Execute<Activity>(request);
+            var cancellationTokenSource = new CancellationTokenSource();
+            var response = await restClient_.ExecuteGetTaskAsync<Activity>(request, cancellationTokenSource.Token);
 
             if(!response.IsSuccessful)
             {
@@ -42,7 +45,7 @@ namespace ExtendedStravaClient
             return response.Data;
         }
 
-        public List<Activity> GetActivities(int? before = null, int? after = null, int? page = null, int? pageSize = null)
+        public async Task<List<Activity>> GetActivities(int? before = null, int? after = null, int? page = null, int? pageSize = null)
         {
             var request = new RestRequest(Method.GET);
             request.Resource = "/athlete/activities";
@@ -52,7 +55,8 @@ namespace ExtendedStravaClient
             request.AddNullableParameter("page", page);
             request.AddNullableParameter("per_page", pageSize);
 
-            var response = restClient_.Execute<List<Activity>>(request);
+            var cancellationTokenSource = new CancellationTokenSource();
+            var response = await restClient_.ExecuteGetTaskAsync<List<Activity>>(request, cancellationTokenSource.Token);
 
             if(!response.IsSuccessful)
             {
@@ -67,14 +71,14 @@ namespace ExtendedStravaClient
             return response.Data;
         }
 
-        public List<Activity> GetAllActivities(int? before, int? after)
+        public async Task<List<Activity>> GetAllActivities(int? before, int? after)
         {
             Console.WriteLine($"Fetching all activities {(before.HasValue? $"before {before.Value.FromEpoch()} " : "")}{(after.HasValue ? $"after {after.Value.FromEpoch()}" : "")}."); 
             List<Activity> activities = new List<Activity>();
             int page = 1;
             int perList = 50;
             List<Activity> partialActivities;
-            while((partialActivities = GetActivities(before, after, page++, perList)) != null && partialActivities.Count != 0)
+            while((partialActivities = await GetActivities(before, after, page++, perList)) != null && partialActivities.Count != 0)
             {
                 activities.AddRange(partialActivities);   
                 Console.WriteLine($"Added {partialActivities.Count} activities from page {page}"); 
