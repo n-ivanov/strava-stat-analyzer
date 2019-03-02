@@ -28,7 +28,7 @@ namespace StravaStatisticsAnalyzerConsole
     {
         static readonly HttpClient client_ = new HttpClient();
         static readonly MySqlDBFacade dbFacade_ = new MySqlDBFacade();
-        static Analyzer analyzer_ = new Analyzer(dbFacade_);
+        static Client stravaClient_ = new Client(dbFacade_);
 
         static void Main(string[] args)
         {
@@ -49,10 +49,10 @@ namespace StravaStatisticsAnalyzerConsole
                 token = Authenticate();
             }
            
-            analyzer_.Initialize(token);
+            stravaClient_.Initialize(token);
             if(options.Update)
             {
-                var task = analyzer_.GetAndSaveNewActivities();
+                var task = stravaClient_.GetAndSaveNewActivities();
                 task.Wait();     
             }
 
@@ -125,7 +125,7 @@ namespace StravaStatisticsAnalyzerConsole
             var intervalsArr = intervals.ToArray();
             foreach(var ride in rides)
             {
-                var results = analyzer_.AnalyzeRide(ride, intervals.ToArray()); 
+                var results = stravaClient_.AnalyzeRide(ride, intervals.ToArray()); 
                 presenter.PresentResults(results, intervalsArr);
                 Console.WriteLine();
             }

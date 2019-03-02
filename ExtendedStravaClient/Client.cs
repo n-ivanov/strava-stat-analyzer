@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace ExtendedStravaClient
 {
-    public class Analyzer
+    public class Client
     {
         Fetcher fetcher_;
         IDBFacade dbFacade_;
 
-        public Analyzer(IDBFacade facade)
+        public Client(IDBFacade facade)
         {
             fetcher_ = new Fetcher();
             dbFacade_ = facade;
