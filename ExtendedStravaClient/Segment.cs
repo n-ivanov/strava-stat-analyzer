@@ -1,4 +1,4 @@
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
 
     public class Segment : IStravaObject

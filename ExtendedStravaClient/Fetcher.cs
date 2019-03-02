@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using RestSharp;
 using RestSharp.Extensions;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public class Fetcher
     {

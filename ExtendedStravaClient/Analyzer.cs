@@ -2,45 +2,45 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public class Analyzer
     {
         Fetcher fetcher_;
-        DBWriter dbWriter_;
+        IDBFacade dbFacade_;
 
-        public Analyzer()
+        public Analyzer(IDBFacade facade)
         {
             fetcher_ = new Fetcher();
-            dbWriter_ = new DBWriter();
+            dbFacade_ = facade;
         }
 
         public void Initialize(string accessToken)
         {
             fetcher_.Initialize(accessToken);
-            dbWriter_.Initialize();
+            dbFacade_.Initialize();
         }
 
         public void GetAndSaveNewActivities()
         {
-            var lastUpdate = dbWriter_.GetLastUpdate();
+            var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
             {
                 lastUpdate = 1534982400;
             }
             var activities = fetcher_.GetAllActivities(null, lastUpdate);
-            dbWriter_.Insert(activities);
+            dbFacade_.Insert(activities);
             foreach(var activity in activities)
             {
                 var detailedActivity = fetcher_.GetDetailedActivity(activity.Id);
-                // dbWriter_.Update(activity);
+                // dbFacade_.Update(activity);
                 if(detailedActivity == null)
                 {
                     Console.WriteLine("Unable to fetch detailed activity. Aborting insertions...");
                     break;
                 }
-                dbWriter_.Insert(detailedActivity.Segment_Efforts);
-                dbWriter_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
+                dbFacade_.Insert(detailedActivity.Segment_Efforts);
+                dbFacade_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
             }
         }
 
@@ -62,15 +62,16 @@ namespace StravaStatisticsAnalyzer
                 }
                 normalizedIntervals = intervals;
             }
-            var activities = dbWriter_.GetActivities(rideName, maxInterval);
+            var activities = dbFacade_.GetActivities(rideName, maxInterval);
             var results = new Dictionary<string,List<IRideEffortAnalysis>>();
             
             results[rideName] = new List<IRideEffortAnalysis>(); 
             foreach(var interval in normalizedIntervals)
             {
-                results[rideName].Add(new RideEffortAnalysis(rideName, activities.GetRange(0, Math.Min(interval, activities.Count))));
+                var activitySubset =  activities.GetRange(0, Math.Min(interval, activities.Count));
+                results[rideName].Add(new RideEffortAnalysis(rideName,activitySubset));
             }
-            var segmentEfforts = dbWriter_.GetSegmentEffortsForActivity(rideName, maxInterval);
+            var segmentEfforts = dbFacade_.GetSegmentEffortsForActivity(rideName, maxInterval);
 
             foreach(var kvp in segmentEfforts)
             {

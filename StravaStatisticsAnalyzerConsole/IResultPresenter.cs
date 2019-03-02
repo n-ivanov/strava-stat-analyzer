@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using System.Extensions;
 using System.Collections.Generic;
-using StravaStatisticsAnalyzer;
+using ExtendedStravaClient;
 
 namespace StravaStatisticsAnalyzerConsole
 {

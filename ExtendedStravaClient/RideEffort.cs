@@ -1,6 +1,6 @@
 using System;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
         public interface IRideEffort
     {

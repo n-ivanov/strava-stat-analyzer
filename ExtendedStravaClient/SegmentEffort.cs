@@ -1,6 +1,6 @@
 
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public class AbbreviatedActivity
     {

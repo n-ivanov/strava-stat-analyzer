@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public class AbbreviatedAthlete
     {

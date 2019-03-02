@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Linq;
 using System.Extensions;
 using System.Collections.Generic; 
-using StravaStatisticsAnalyzer;
+using ExtendedStravaClient;
 using CommandLine;
 
 namespace StravaStatisticsAnalyzerConsole
@@ -27,7 +27,8 @@ namespace StravaStatisticsAnalyzerConsole
     class Program
     {
         static readonly HttpClient client_ = new HttpClient();
-        static Analyzer analyzer_ = new Analyzer();
+        static readonly MySqlDBFacade dbFacade_ = new MySqlDBFacade();
+        static Analyzer analyzer_ = new Analyzer(dbFacade_);
 
         static void Main(string[] args)
         {
@@ -60,11 +61,11 @@ namespace StravaStatisticsAnalyzerConsole
         private static string Authenticate()
         {
             var listener = new HttpListener();
-            listener.Prefixes.Add($"http://localhost:{Config.LOCAL_SERVER_PORT}/");
+            listener.Prefixes.Add($"http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}/");
             listener.Start();
 
             var targetAuthUrl =  
-                $"https://www.strava.com/oauth/authorize?client_id={Config.CLIENT_ID}&redirect_uri=http://localhost:{Config.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:read";
+                $"https://www.strava.com/oauth/authorize?client_id={Configuration.Strava.CLIENT_ID}&redirect_uri=http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:read";
 
             Console.WriteLine($"Attempting to access {targetAuthUrl}");
 
@@ -91,8 +92,8 @@ namespace StravaStatisticsAnalyzerConsole
 
             var requestVals = new Dictionary<string,string>
             {
-                {"client_id", Config.CLIENT_ID.ToString()},
-                {"client_secret", Config.CLIENT_SECRET},
+                {"client_id", Configuration.Strava.CLIENT_ID.ToString()},
+                {"client_secret", Configuration.Strava.CLIENT_SECRET},
                 {"code",returnedArgs["code"]},
                 {"grant_type","authorization_code"}
             };
@@ -126,13 +127,6 @@ namespace StravaStatisticsAnalyzerConsole
                 var results = analyzer_.AnalyzeRide(ride, intervals.ToArray()); 
                 presenter.PresentResults(results, intervalsArr);
                 Console.WriteLine();
-                // foreach(var kvp in results)
-                // {
-                //     Console.WriteLine($"In {result.IntervalLength} rides for '{result.Name}', your best ride was {result.Time.Minimum.ToTime()} @ {result.Speed.Maximum *3.6} km/h.");
-                //     Console.WriteLine($"The average ride in this interval was {Convert.ToInt32(result.Time.Average).ToTime()} @ {result.Speed.Average *3.6} km/h.");
-                //     Console.WriteLine($"The worst ride in this interval was {Convert.ToInt32(result.Time.Maximum).ToTime()} @ {result.Speed.Minimum *3.6} km/h.");
-                //     Console.WriteLine("----------------------------------------------------------");
-                // }
             }
         }
     }   

@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public interface IStatisticalAnalysis<T> where T: struct, IComparable<T>, IConvertible
     {

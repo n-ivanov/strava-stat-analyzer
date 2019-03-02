@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
-namespace StravaStatisticsAnalyzer
+namespace ExtendedStravaClient
 {
     public class AuthenticationResponse
     {

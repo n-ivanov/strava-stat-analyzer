@@ -4,10 +4,11 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 using MySql.Data.MySqlClient;
+using ExtendedStravaClient;
 
-namespace StravaStatisticsAnalyzer
+namespace StravaStatisticsAnalyzerConsole
 {
-    internal class DBWriter
+    internal class MySqlDBFacade : IDBFacade
     {
         private MySql.Data.MySqlClient.MySqlConnection connection_;
         private string connectionString_;
@@ -249,6 +250,11 @@ namespace StravaStatisticsAnalyzer
                 Configuration.MySQL.Tables.Segment.NAME); 
         }
 
+        public bool Update(Activity activity)
+        {
+            throw new NotImplementedException($"{nameof(MySqlDBFacade)}.{nameof(Update)} has not been implemented.");
+        }
+
         private bool InsertObjects<T>(List<T> objs, Func<T,bool> insertFunc, HashSet<long> existingObjs) where T : IStravaObject
         {
             foreach(var obj in objs.Where(o => !existingObjs.Contains(o.Id)))
@@ -307,7 +313,7 @@ namespace StravaStatisticsAnalyzer
         #endregion
         
         #region Initialization
-        internal bool InitializeConnection()
+        private bool InitializeConnection()
         {
             Console.WriteLine("Initializing connection...");
             try 
@@ -329,7 +335,7 @@ namespace StravaStatisticsAnalyzer
         }
 
 
-        internal bool InitializeTables()
+        private bool InitializeTables()
         {
             if(createNewTables_)
             {
