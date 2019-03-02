@@ -10,7 +10,6 @@ namespace StravaStatisticsAnalyzerConsole
 {
     internal class MySqlDBFacade : IDBFacade
     {
-        private MySql.Data.MySqlClient.MySqlConnection connection_;
         private string connectionString_;
         private bool createNewTables_= false;
         private HashSet<long> insertedSegments_;
@@ -28,23 +27,27 @@ namespace StravaStatisticsAnalyzerConsole
         public void Shutdown()
         {
             Console.WriteLine("Closing connection...");
-            connection_.Close();
         }
 
         #region Fetcher 
 
         public int GetLastUpdate()
         {
-            var command = connection_.CreateCommand();
-            command.CommandText = $"SELECT date_time FROM {Configuration.MySQL.Tables.Activity.NAME} ORDER BY date_time DESC";
-            var reader = command.ExecuteReader();
-            if(reader.Read())
+            using(var connection = new MySqlConnection(connectionString_))
             {
-                var dateTime = reader.GetDateTime(0);
-                reader.Close();
-                return dateTime.ToEpoch();
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = $"SELECT date_time FROM {Configuration.MySQL.Tables.Activity.NAME} ORDER BY date_time DESC";
+                using(var reader = command.ExecuteReader())
+                {
+                    if(reader.Read())
+                    {
+                        var dateTime = reader.GetDateTime(0);
+                        reader.Close();
+                        return dateTime.ToEpoch();
+                    }
+                }
             }
-            reader.Close();
             return -1;
         }
 
@@ -117,25 +120,29 @@ namespace StravaStatisticsAnalyzerConsole
         private List<T> SqlQuery<T>(string commandText, string errorMessage, Func<MySqlDataReader,T> createElementFunc)
         {
             var list = new List<T>();
-            var command = connection_.CreateCommand();
-            command.CommandText = commandText;
-            MySqlDataReader reader = null;
-            try
+            using(var connection = new MySqlConnection(connectionString_))
             {
-                reader = command.ExecuteReader();
-                while(reader.Read())
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = commandText;
+                try
                 {
-                    list.Add(createElementFunc(reader));
+                    using(var reader = command.ExecuteReader())
+                    {
+                        while(reader.Read())
+                        {
+                            list.Add(createElementFunc(reader));
+                        }
+                    }
+                }
+                catch(MySqlException ex)
+                {
+                    Console.WriteLine(errorMessage);
+                    Console.WriteLine($"Command - {command.CommandText}");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
                 }
             }
-            catch(MySqlException ex)
-            {
-                Console.WriteLine(errorMessage);
-                Console.WriteLine($"Command - {command.CommandText}");
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-            reader?.Close();
             return list;
         }
 
@@ -143,25 +150,29 @@ namespace StravaStatisticsAnalyzerConsole
             Func<MySqlDataReader,TKey> createKeyFunc, Func<MySqlDataReader,TValue> createValueFunc)
         {
             var dict = new Dictionary<TKey,TValue> ();
-            var command = connection_.CreateCommand();
-            command.CommandText = commandText;
-            MySqlDataReader reader = null;
-            try
+            using(var connection = new MySqlConnection(connectionString_))
             {
-                reader = command.ExecuteReader();
-                while(reader.Read())
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = commandText;
+                try 
                 {
-                    dict[createKeyFunc(reader)] = createValueFunc(reader);
+                    using(var reader = command.ExecuteReader())
+                    {
+                        while(reader.Read())
+                        {
+                            dict[createKeyFunc(reader)] = createValueFunc(reader);
+                        }
+                    }
+                }
+                catch(MySqlException ex)
+                {
+                    Console.WriteLine(errorMessage);
+                    Console.WriteLine($"Command - {command.CommandText}");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
                 }
             }
-            catch(MySqlException ex)
-            {
-                Console.WriteLine(errorMessage);
-                Console.WriteLine($"Command - {command.CommandText}");
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-            reader?.Close();
             return dict;
         }
 
@@ -285,29 +296,33 @@ namespace StravaStatisticsAnalyzerConsole
 
         private bool InsertObjectIntoTable<T>(T obj, Action<T,MySqlCommand> createCommand, Dictionary<string,string> cols, string tableName) where T : IStravaObject
         {
-            var command = connection_.CreateCommand();
-            var columns = String.Join(",", cols.Keys);
-            var columnsAsParams =$"@{String.Join(", @", cols.Keys)}";
-            command.CommandText = $"INSERT INTO {tableName}({columns}) VALUES({columnsAsParams})";
-            createCommand(obj, command);
-            try
+            using(var connection = new MySqlConnection(connectionString_))
             {
-                if(command.ExecuteNonQuery() > 0)
+                connection.Open();
+                var command = connection.CreateCommand();
+                var columns = String.Join(",", cols.Keys);
+                var columnsAsParams =$"@{String.Join(", @", cols.Keys)}";
+                command.CommandText = $"INSERT INTO {tableName}({columns}) VALUES({columnsAsParams})";
+                createCommand(obj, command);
+                try
                 {
-                    Console.WriteLine($"Successfully added {tableName} {obj.Name} ({obj.Id})");
-                    return true;
+                    if(command.ExecuteNonQuery() > 0)
+                    {
+                        Console.WriteLine($"Successfully added {tableName} {obj.Name} ({obj.Id})");
+                        return true;
+                    }
+                    Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
                 }
-                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
+                catch(MySqlException ex)
+                {
+                    Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
+                    Console.WriteLine(command.ToString());
+                    Console.WriteLine(command.CommandText);
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);                    
+                }
+                return false;
             }
-            catch(MySqlException ex)
-            {
-                Console.WriteLine($"Unable to add {tableName} {obj.Name} ({obj.Id})");
-                Console.WriteLine(command.ToString());
-                Console.WriteLine(command.CommandText);
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);                    
-            }
-            return false;
         }
 
         #endregion
@@ -320,9 +335,6 @@ namespace StravaStatisticsAnalyzerConsole
             {
                 connectionString_ = 
                     $"server={Configuration.MySQL.SERVER};uid={Configuration.MySQL.UID};pwd={Configuration.MySQL.PASSWORD};database={Configuration.MySQL.DATABASE}";
-                connection_ = new MySqlConnection(connectionString_);
-                connection_.Open();
-                Console.WriteLine($"Successfully connected. MySQL v{connection_.ServerVersion}");
                 return true;
             }
             catch(MySqlException ex)
@@ -337,22 +349,27 @@ namespace StravaStatisticsAnalyzerConsole
 
         private bool InitializeTables()
         {
-            if(createNewTables_)
+            using(var connection = new MySqlConnection(connectionString_))
             {
-                DropTable(Configuration.MySQL.Tables.Activity.NAME);
-                DropTable(Configuration.MySQL.Tables.Segment.NAME);
-                DropTable(Configuration.MySQL.Tables.SegmentEffort.NAME);
+                connection.Open();
+                Console.WriteLine($"Successfully connected. MySQL v{connection.ServerVersion}");
+                if(createNewTables_)
+                {
+                    DropTable(Configuration.MySQL.Tables.Activity.NAME, connection);
+                    DropTable(Configuration.MySQL.Tables.Segment.NAME, connection);
+                    DropTable(Configuration.MySQL.Tables.SegmentEffort.NAME, connection);
+                }
+                var res = true;
+                res |= InitializeTable(Configuration.MySQL.Tables.Activity.NAME, Configuration.MySQL.Tables.Activity.COLUMNS, connection);
+                res |= InitializeTable(Configuration.MySQL.Tables.Segment.NAME, Configuration.MySQL.Tables.Segment.COLUMNS, connection);
+                res |= InitializeTable(Configuration.MySQL.Tables.SegmentEffort.NAME, Configuration.MySQL.Tables.SegmentEffort.COLUMNS, connection);
+                return res;
             }
-            var res = true;
-            res |= InitializeTable(Configuration.MySQL.Tables.Activity.NAME, Configuration.MySQL.Tables.Activity.COLUMNS);
-            res |= InitializeTable(Configuration.MySQL.Tables.Segment.NAME, Configuration.MySQL.Tables.Segment.COLUMNS);
-            res |= InitializeTable(Configuration.MySQL.Tables.SegmentEffort.NAME, Configuration.MySQL.Tables.SegmentEffort.COLUMNS);
-            return res;
         }
 
-        private bool InitializeTable(string tableName, Dictionary<string,string> columns)
+        private bool InitializeTable(string tableName, Dictionary<string,string> columns, MySqlConnection connection)
         {
-            if(!TableExists(tableName))
+            if(!TableExists(tableName, connection))
             {
                 StringBuilder sb = new StringBuilder();
                 sb.Append($"CREATE TABLE {tableName} (");
@@ -362,7 +379,7 @@ namespace StravaStatisticsAnalyzerConsole
                 } 
                 sb.Append("PRIMARY KEY (id))");
                 var createTableStr = sb.ToString();
-                var cmd = new MySqlCommand(createTableStr, connection_);
+                var cmd = new MySqlCommand(createTableStr, connection);
                 try 
                 {
                     cmd.ExecuteNonQuery();
@@ -381,19 +398,19 @@ namespace StravaStatisticsAnalyzerConsole
             return true;
         }
 
-        private bool TableExists(string tableName)
+        private bool TableExists(string tableName, MySqlConnection connection)
         {
             var check = $"SHOW TABLES LIKE \'{tableName}\'";
-            var cmd = new MySqlCommand(check, connection_);
+            var cmd = new MySqlCommand(check, connection);
             var reader = cmd.ExecuteReader();
             var exists = reader.HasRows;
             reader.Close();
             return exists;
         }
 
-        private bool DropTable(string tableName)
+        private bool DropTable(string tableName, MySqlConnection connection)
         {
-            var cmd = new MySqlCommand($"DROP TABLE {tableName}", connection_);
+            var cmd = new MySqlCommand($"DROP TABLE {tableName}", connection);
             try 
             {
                 cmd.ExecuteNonQuery();
