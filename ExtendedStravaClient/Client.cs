@@ -23,7 +23,7 @@ namespace ExtendedStravaClient
             dbFacade_.Initialize();
         }
 
-        public async Task GetAndSaveNewActivities()
+        public async Task GetAndSaveNewActivities(bool getDetailedActivityInformation = true)
         {
             var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
@@ -32,9 +32,17 @@ namespace ExtendedStravaClient
             }
             var activities = await fetcher_.GetAllActivities(null, lastUpdate);
             dbFacade_.Insert(activities);
-            foreach(var activity in activities)
+            if(getDetailedActivityInformation)
             {
-                var detailedActivity = await fetcher_.GetDetailedActivity(activity.Id);
+                await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList());
+            }
+        }
+
+        public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds)
+        {
+            foreach(var activityId in activityIds)
+            {
+                var detailedActivity = await fetcher_.GetDetailedActivity(activityId);
                 // dbFacade_.Update(activity);
                 if(detailedActivity == null)
                 {
