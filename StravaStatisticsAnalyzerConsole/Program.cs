@@ -165,7 +165,7 @@ namespace StravaStatisticsAnalyzerConsole
             var presenter = new ConsoleResultPresenter();
             foreach(var ride in rides)
             {
-                var results = stravaClient_.AnalyzeRide(ride, new List<(DateTime? start, DateTime? end)>(){(start,end)}); 
+                var results = stravaClient_.AnalyzeRide(ride, new (DateTime? start, DateTime? end)[]{(start,end)}); 
                 presenter.PresentResults(results,new (DateTime? start, DateTime? end)[]{(start, end)});
                 Console.WriteLine();
             }

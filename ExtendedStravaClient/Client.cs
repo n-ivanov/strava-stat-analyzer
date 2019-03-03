@@ -95,7 +95,7 @@ namespace ExtendedStravaClient
             return results;
         }
 
-        public Dictionary<string,List<IRideEffortAnalysis>> AnalyzeRide(string rideName, List<(DateTime? start, DateTime? end)> intervals)
+        public Dictionary<string,List<IRideEffortAnalysis>> AnalyzeRide(string rideName, (DateTime? start, DateTime? end)[] intervals)
         {
             var result = new Dictionary<string,List<IRideEffortAnalysis>>();
 
