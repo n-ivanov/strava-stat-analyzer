@@ -28,7 +28,8 @@ namespace ExtendedStravaClient
             var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
             {
-                lastUpdate = 1534982400;
+                // lastUpdate = 1534982400;
+                lastUpdate = 1551398400;
             }
             var activities = await fetcher_.GetAllActivities(null, lastUpdate);
             dbFacade_.Insert(activities);

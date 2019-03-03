@@ -1,4 +1,5 @@
-
+using System;
+using System.Globalization;
 
 namespace ExtendedStravaClient
 {
@@ -9,6 +10,8 @@ namespace ExtendedStravaClient
 
     public class SegmentEffort : IStravaObject
     {
+        private DateTime dateTime_;
+
         #region Direct Deserialization Properties 
         public long Id { get; set; }
         public string Name { get; set; }
@@ -25,6 +28,20 @@ namespace ExtendedStravaClient
 
         #region Manipulated Deserialization Properties 
         public string DateTimeStr => Start_Date.Replace("T"," ").Replace("Z", "");
+        public DateTime DateTime 
+        {
+            get 
+            {
+                if(dateTime_ == default(DateTime))
+                {
+                    dateTime_ = DateTime.TryParseExact(Start_Date, "yyyy-MM-ddTHH:mm:ssZ", 
+                        CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dt) 
+                            ? dt 
+                            : default(DateTime); 
+                }
+                return dateTime_;
+            }
+        }
         #endregion
     }
 }

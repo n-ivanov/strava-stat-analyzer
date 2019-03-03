@@ -248,9 +248,9 @@ namespace StravaStatisticsAnalyzerConsole
                 command.Parameters.AddWithValue("@name", segment.Name);
                 command.Parameters.AddWithValue("@distance",segment.Distance);
                 command.Parameters.AddWithValue("@avg_grade", segment.Average_Grade);
-                command.Parameters.AddWithValue("@max_grade", segment.Max_Grade);
-                command.Parameters.AddWithValue("@elev_high", segment.Elev_High);
-                command.Parameters.AddWithValue("@elev_low", segment.Elev_Low);
+                command.Parameters.AddWithValue("@max_grade", segment.Maximum_Grade);
+                command.Parameters.AddWithValue("@elev_high", segment.Elevation_High);
+                command.Parameters.AddWithValue("@elev_low", segment.Elevation_Low);
                 command.Parameters.AddWithValue("@start_latitude", segment.Start_Latitude);
                 command.Parameters.AddWithValue("@start_longitude", segment.Start_Longitude);
                 command.Parameters.AddWithValue("@end_latitude", segment.End_Latitude);
