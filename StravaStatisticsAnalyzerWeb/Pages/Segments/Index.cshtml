@@ -1,0 +1,96 @@
+@page
+@model StravaStatisticsAnalyzerWeb.Pages.Segments.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].Distance)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].AvgGrade)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].MaxGrade)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].ElevationHigh)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].ElevationLow)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].StartLatitude)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].StartLongitude)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].EndLatitude)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].EndLongitude)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Segment[0].Starred)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Segment) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Distance)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AvgGrade)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MaxGrade)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ElevationHigh)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ElevationLow)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StartLatitude)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StartLongitude)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.EndLatitude)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.EndLongitude)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Starred)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.ID">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.ID">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.ID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

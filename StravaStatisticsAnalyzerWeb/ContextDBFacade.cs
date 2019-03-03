@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ExtendedStravaClient;
+using ExtendedStravaClient.Extensions;
 using StravaStatisticsAnalyzer.Web.Models;
 
 namespace StravaStatisticsAnalyzer.Web
@@ -14,9 +16,17 @@ namespace StravaStatisticsAnalyzer.Web
     public class ContextDBFacade : IDBFacade
     {
         public RazorPagesActivityContext ActivityContext {get;set;}
+        public RazorPagesSegmentEffortContext SegmentEffortContext {get;set;}
+
+        public RazorPagesSegmentContext SegmentContext {get;set;}
+        public HttpContext HttpContext {get;set;}
 
         public bool Initialize()
         {
+            ActivityContext = (RazorPagesActivityContext)HttpContext.RequestServices.GetService(typeof(RazorPagesActivityContext));
+            SegmentEffortContext = (RazorPagesSegmentEffortContext)HttpContext.RequestServices.GetService(typeof(RazorPagesSegmentEffortContext));
+            SegmentContext = (RazorPagesSegmentContext)HttpContext.RequestServices.GetService(typeof(RazorPagesSegmentContext));
+            
             return true;
         }
 
@@ -31,7 +41,7 @@ namespace StravaStatisticsAnalyzer.Web
             {
                 foreach(var activity in activities)
                 {
-                    ActivityContext.Activity.Add(ConvertClientActivityToModelActivity(activity));
+                    ActivityContext.Activity.Add(activity.ToModel());
                 }
                 ActivityContext.SaveChanges();
                 return true;
@@ -41,11 +51,29 @@ namespace StravaStatisticsAnalyzer.Web
 
         public bool Insert(List<ExtendedStravaClient.SegmentEffort> segmentEfforts)
         {
+            if(SegmentEffortContext != null)
+            {
+                foreach(var segmentEffort in segmentEfforts)
+                {
+                    SegmentEffortContext.SegmentEffort.Add(segmentEffort.ToModel());
+                }
+                SegmentEffortContext.SaveChanges();
+                return true;
+            }
             return false;
         }
 
         public bool Insert(List<ExtendedStravaClient.Segment> segments)
         {
+            if(SegmentContext != null)
+            {
+                foreach(var segment in segments)
+                {
+                    SegmentContext.Segment.Add(segment.ToModel());
+                }
+                SegmentContext.SaveChanges();
+                return true;
+            }
             return false;
         }
 
@@ -53,7 +81,7 @@ namespace StravaStatisticsAnalyzer.Web
         {
             if(ActivityContext != null)
             {
-                ActivityContext.Activity.Add(ConvertClientActivityToModelActivity(activity));
+                ActivityContext.Activity.Add(activity.ToModel());
                 ActivityContext.SaveChanges();
                 return true;
             }
@@ -62,11 +90,23 @@ namespace StravaStatisticsAnalyzer.Web
 
         public bool Insert(ExtendedStravaClient.SegmentEffort segmentEffort)
         {
+            if(SegmentEffortContext != null)
+            {
+                SegmentEffortContext.SegmentEffort.Add(segmentEffort.ToModel());
+                SegmentEffortContext.SaveChanges();
+                return true;
+            }
             return false;
         }
 
         public bool Insert(ExtendedStravaClient.Segment segment)
         {
+            if(SegmentContext != null)
+            {
+                SegmentContext.Segment.Add(segment.ToModel());
+                SegmentContext.SaveChanges();
+                return true;
+            }
             return false;
         }
 
@@ -86,17 +126,58 @@ namespace StravaStatisticsAnalyzer.Web
 
         public Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, int? maxInterval)
         {
-            return null;
+            var ids = GetSegmentIdsForActivity(activityName);
+            if(ids == null || ids.Count == 0 || SegmentContext == null)
+            {
+                return null;
+            }
+
+            var segmentNamesById = SegmentContext.Segment.Where(s => ids.Contains(s.ID)).ToDictionary(s => s.ID, s=> s.Name);
+            var res = new Dictionary<string,List<IRideEffort>>();
+            foreach(var id in ids)
+            {
+                var segmentEfforts = GetSegmentEffortsForSegment(id, maxInterval);
+                if(segmentEfforts.Count > 0)
+                {
+                    res.Add(segmentNamesById[id], segmentEfforts);
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to get segment efforts for {segmentNamesById[id]}");
+                }
+            }
+            return res;
         }
 
         public List<long> GetSegmentIdsForActivity(string activityName)
         {
-            return null;
+            var activityId = ActivityContext.Activity.Where(a => a.Name == activityName).FirstOrDefault()?.ID;
+            var segmentsWithCount = SegmentEffortContext.SegmentEffort.Where(s => s.ActivityID == activityId)
+                .GroupBy(s => s.SegmentID).OrderBy(g => g.Count())
+                .Select(g => new Tuple<long,long>(g.Key, g.Count())).ToList();
+            // var segmentsWithCount = SegmentEffortContext.Database.SqlQuery<(long id, int count)>(
+            //     $@"SELECT id,count FROM  
+            //         ((SELECT segment_id AS id,count(*) AS count FROM segment_effort WHERE activity_id IN 
+            //             (SELECT id from activity WHERE name like '{activityName}'
+            //         )
+            //         group by segment_id) as segment_by_count) ORDER BY count DESC;"
+            // ).ToList();
+            var averageCount = segmentsWithCount.Select(i => i.Item2).Average();
+            return segmentsWithCount.Where(i => i.Item2 >= averageCount).Select(i => i.Item1).ToList();
         }
 
         public List<IRideEffort> GetActivities(string activityName, int? maxInterval)
         {
-            return null;            
+            if(ActivityContext != null)
+            {
+                var activities = ActivityContext.Activity.Where(a => a.Name == activityName).OrderByDescending(a => a.DateTime).ToList();
+                if(maxInterval.HasValue && maxInterval < activities.Count)
+                {
+                    activities = activities.GetRange(0, maxInterval.Value);
+                }
+                return activities.Select(a => (IRideEffort)new RideEffort(a.ID, a.AvgSpeed, a.MovingTime, a.DateTime)).ToList();
+            }
+            return new List<IRideEffort>();
         }
 
         public bool Update(ExtendedStravaClient.Activity activity)
@@ -104,29 +185,18 @@ namespace StravaStatisticsAnalyzer.Web
             return false;
         }
 
-        private Models.Activity ConvertClientActivityToModelActivity(ExtendedStravaClient.Activity activity)
+        private List<IRideEffort> GetSegmentEffortsForSegment(long segmentId, int? maxInterval)
         {
-            return new Models.Activity()
+            if(SegmentEffortContext != null)
             {
-                ID = activity.Id,
-                Name = activity.Name,
-                Distance = activity.Distance,
-                MovingTime = activity.Moving_Time,
-                ElapsedTime = activity.Elapsed_Time,
-                AvgSpeed = activity.Average_Speed,
-                MaxSpeed = activity.Max_Speed,
-                DateTime = activity.DateTime,
-                AthleteID = activity.Athlete.Id,
-                TotalElevationGain = activity.Total_Elevation_Gain,
-                ElevationHigh = activity.Elev_High,
-                ElevationLow = activity.Elev_Low, 
-                StartLatitude = activity.Start_Latitude,
-                StartLongitude = activity.Start_Longitude,
-                EndLatitude = activity.End_Latitude,
-                EndLongitude = activity.End_Longitude, 
-                Description = activity.Description,
-                Commute = activity.Commute                
-            };
+                var segmentEfforts = SegmentEffortContext.SegmentEffort.Where(a => a.ID == segmentId).OrderByDescending(a => a.DateTime).ToList();
+                if(maxInterval.HasValue && maxInterval < segmentEfforts.Count)
+                {
+                    segmentEfforts = segmentEfforts.GetRange(0, maxInterval.Value);
+                }
+                return segmentEfforts.Select(a => (IRideEffort)new RideEffort(a.ID, a.AvgSpeed, a.MovingTime, a.DateTime)).ToList();
+            }
+            return new List<IRideEffort>();
         }
-    }
+    }   
 }

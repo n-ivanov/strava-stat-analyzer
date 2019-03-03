@@ -1,0 +1,84 @@
+@page
+@model StravaStatisticsAnalyzerWeb.Pages.Segments.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Segment</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Segment.Name" class="control-label"></label>
+                <input asp-for="Segment.Name" class="form-control" />
+                <span asp-validation-for="Segment.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.Distance" class="control-label"></label>
+                <input asp-for="Segment.Distance" class="form-control" />
+                <span asp-validation-for="Segment.Distance" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.AvgGrade" class="control-label"></label>
+                <input asp-for="Segment.AvgGrade" class="form-control" />
+                <span asp-validation-for="Segment.AvgGrade" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.MaxGrade" class="control-label"></label>
+                <input asp-for="Segment.MaxGrade" class="form-control" />
+                <span asp-validation-for="Segment.MaxGrade" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.ElevationHigh" class="control-label"></label>
+                <input asp-for="Segment.ElevationHigh" class="form-control" />
+                <span asp-validation-for="Segment.ElevationHigh" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.ElevationLow" class="control-label"></label>
+                <input asp-for="Segment.ElevationLow" class="form-control" />
+                <span asp-validation-for="Segment.ElevationLow" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.StartLatitude" class="control-label"></label>
+                <input asp-for="Segment.StartLatitude" class="form-control" />
+                <span asp-validation-for="Segment.StartLatitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.StartLongitude" class="control-label"></label>
+                <input asp-for="Segment.StartLongitude" class="form-control" />
+                <span asp-validation-for="Segment.StartLongitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.EndLatitude" class="control-label"></label>
+                <input asp-for="Segment.EndLatitude" class="form-control" />
+                <span asp-validation-for="Segment.EndLatitude" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Segment.EndLongitude" class="control-label"></label>
+                <input asp-for="Segment.EndLongitude" class="form-control" />
+                <span asp-validation-for="Segment.EndLongitude" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="Segment.Starred" /> @Html.DisplayNameFor(model => model.Segment.Starred))
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

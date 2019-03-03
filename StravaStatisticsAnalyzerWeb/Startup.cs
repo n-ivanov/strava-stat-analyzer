@@ -90,6 +90,10 @@ namespace StravaStatisticsAnalyzer.Web
 
             services.AddDbContext<RazorPagesActivityContext>(options => 
                 options.UseSqlite(Configuration.GetConnectionString("ActivityContext")));
+            services.AddDbContext<RazorPagesSegmentEffortContext>(options => 
+                options.UseSqlite(Configuration.GetConnectionString("SegmentEffortContext")));
+            services.AddDbContext<RazorPagesSegmentContext>(options => 
+                options.UseSqlite(Configuration.GetConnectionString("SegmentContext")));
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }

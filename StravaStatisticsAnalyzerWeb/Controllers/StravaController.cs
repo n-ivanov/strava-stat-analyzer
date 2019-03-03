@@ -22,13 +22,12 @@ namespace StravaStatisticsAnalyzer.Web
         public async Task<IActionResult> GetActivities(string returnUrl = "/")
         {
             string accessToken = await HttpContext.GetTokenAsync("access_token");
-            
-            var client = new Client(new ContextDBFacade(){ActivityContext = context_});
+            var client = new Client(new ContextDBFacade(){ActivityContext = context_, HttpContext = HttpContext});
             client.Initialize(accessToken);         
 
             try
             {
-                await client.GetAndSaveNewActivities(false);
+                await client.GetAndSaveNewActivities(true);
             }
             catch (Exception ex)
             {
