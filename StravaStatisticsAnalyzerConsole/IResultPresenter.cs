@@ -9,5 +9,8 @@ namespace StravaStatisticsAnalyzerConsole
     public interface IResultPresenter 
     {
         void PresentResults(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, int[] intervals);
+        void PresentResults(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, 
+            (DateTime? start, DateTime? end)[] dateIntervals);
+
     }
 }

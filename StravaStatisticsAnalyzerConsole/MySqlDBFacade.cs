@@ -77,11 +77,56 @@ namespace StravaStatisticsAnalyzerConsole
             return res;
         }
 
+        public Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, DateTime? start, DateTime? end)
+        {
+            var ids = GetSegmentIdsForActivity(activityName);
+            var segmentNamesById = SqlQuery<long,string>
+            (
+                $"SELECT name,id FROM segment WHERE id in ({String.Join(",", ids)})",
+                "Unable to fetch names for segments",
+                r => r.GetInt64("id"),
+                r => r.GetString("name")
+            );
+            var res = new Dictionary<string,List<IRideEffort>>();
+            foreach(var id in ids)
+            {
+                var segmentEfforts = GetSegmentEffortsForSegment(id, start, end);
+                if(segmentEfforts.Count > 0)
+                {
+                    res.Add(segmentNamesById[id], segmentEfforts);
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to get segment efforts for {segmentNamesById[id]}");
+                }
+            }
+            return res;
+        }
+
+
         private List<IRideEffort> GetSegmentEffortsForSegment(long segmentId, int? max)
         {
             return SqlQuery<IRideEffort>(
                 $@"SELECT id,moving_time,distance,date_time FROM 
                     segment_effort WHERE segment_id = {segmentId} ORDER BY date_time DESC {(max.HasValue ? $"LIMIT {max.Value}" : "")};",
+                $"Unable to fetch segment efforts for segment {segmentId}",
+                (reader) => 
+                {
+                    var movingTime = reader.GetInt32("moving_time");
+                    var distance = reader.GetDouble("distance");
+                    var speed = distance / movingTime;
+                    return new RideEffort(reader.GetInt64("id"), speed, movingTime, reader.GetDateTime("date_time"));
+                }
+            );
+        }
+
+        private List<IRideEffort> GetSegmentEffortsForSegment(long segmentId, DateTime? start, DateTime? end)
+        {
+            return SqlQuery<IRideEffort>(
+                $@"SELECT id,moving_time,distance,date_time FROM 
+                    segment_effort WHERE segment_id = {segmentId}
+                    {(start.HasValue ? $" AND date_time > '{start:yyyy-MM-dd HH:mm:ss}'" : "")}
+                    {(end.HasValue ? $" AND date_time < '{end:yyyy-MM-dd HH:mm:ss}'" : "")}",
                 $"Unable to fetch segment efforts for segment {segmentId}",
                 (reader) => 
                 {
@@ -111,7 +156,19 @@ namespace StravaStatisticsAnalyzerConsole
         public List<IRideEffort> GetActivities(string activityName, int? maxInterval)
         {
             return SqlQuery<IRideEffort>(
-                $"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}",
+                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' 
+                    ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}",
+                $"Unable to read '{activityName}' activities",
+                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")))
+            );
+        }
+
+        public List<IRideEffort> GetActivities(string activityName, DateTime? start, DateTime? end)
+        {
+            return SqlQuery<IRideEffort>(
+                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}'
+                    {(start.HasValue ? $" AND date_time > '{start:yyyy-MM-dd HH:mm:ss}'" : "")}
+                    {(end.HasValue ? $" AND date_time < '{end:yyyy-MM-dd HH:mm:ss}'" : "")}",
                 $"Unable to read '{activityName}' activities",
                 (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")))
             );

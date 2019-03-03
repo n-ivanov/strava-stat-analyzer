@@ -17,6 +17,18 @@ namespace StravaStatisticsAnalyzerConsole
 
         public void PresentResults(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, int[] intervals)
         {
+            PresentResults(rideEffortAnalyses, intervals, (interval) => $"Last {interval} Rides");
+        }
+
+        public void PresentResults(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, (DateTime? start, DateTime? end)[] dateIntervals)
+        {
+            PresentResults(rideEffortAnalyses, dateIntervals, 
+                (interval) => 
+                    $"{ConvertDateTimeToColumnHeaderString(interval.start)} - {ConvertDateTimeToColumnHeaderString(interval.end)}");
+        }
+
+        private void PresentResults<T>(Dictionary<string,List<IRideEffortAnalysis>> rideEffortAnalyses, T[] intervals, Func<T,string> intervalHeaderFunc)
+        {
             var exampleListEnumerator = rideEffortAnalyses.Values.GetEnumerator();
             exampleListEnumerator.MoveNext();
             var countAnalyses = exampleListEnumerator.Current.Count;
@@ -31,7 +43,7 @@ namespace StravaStatisticsAnalyzerConsole
             string intersectionLine = CreateLineWithIntersections(mainColWidths);
 
             Console.WriteLine($" Analysis of {rideName} ".PadBoth(intersectionLine.Length, '='));
-            Console.WriteLine(CreateHeaders(countAnalyses, intervals));
+            Console.WriteLine(CreateHeaders(countAnalyses, intervals, intervalHeaderFunc));
             bool firstRow = true;
             foreach(var kvp in rideEffortAnalyses)
             {
@@ -43,9 +55,8 @@ namespace StravaStatisticsAnalyzerConsole
                 }       
             }
             Console.WriteLine(intersectionLine);
-
         }
-        
+
         private string CreateRow(string rideName, List<IRideEffortAnalysis> rideEffortAnalyses)
         {
             var numAnalyses = rideEffortAnalyses.Count;
@@ -70,9 +81,9 @@ namespace StravaStatisticsAnalyzerConsole
             return sb.ToString();
         }
 
-        private string CreateHeaders(int numAnalyses, int[] intervals)
+        private string CreateHeaders<T>(int numAnalyses, T[] intervals, Func<T,string> intervalHeaderFunc)
         {
-            StringBuilder header = new StringBuilder();
+             StringBuilder header = new StringBuilder();
             var aggregateColWidth = numAnalyses * (DATA_COL_WIDTH + 1) - 1;
             var mainColWidths = new int[1 + 2 * intervals.Length];
             mainColWidths[0] = RIDE_NAME_COL_WIDTH * -1;
@@ -92,13 +103,19 @@ namespace StravaStatisticsAnalyzerConsole
             StringBuilder subHeader = new StringBuilder();
             foreach(var interval in intervals)
             {
-                subHeader.Append($"|{$"Last {interval} Rides" , DATA_COL_WIDTH}");
+                subHeader.Append($"|{$"{intervalHeaderFunc(interval)}" , DATA_COL_WIDTH}");
             }
             
             header.Append($"{subHeader}");
             header.Append($"{subHeader}|\n");
             header.Append(midLine);
             return header.ToString();
+
+        }
+
+        private string ConvertDateTimeToColumnHeaderString(DateTime? dateTime)
+        {
+            return dateTime.HasValue ? $"{dateTime:MM/dd}" : "N/A";
         }
 
         private string CreateLine(int length)

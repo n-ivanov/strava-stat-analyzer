@@ -94,5 +94,39 @@ namespace ExtendedStravaClient
             }
             return results;
         }
+
+        public Dictionary<string,List<IRideEffortAnalysis>> AnalyzeRide(string rideName, List<(DateTime? start, DateTime? end)> intervals)
+        {
+            var result = new Dictionary<string,List<IRideEffortAnalysis>>();
+
+            //TODO - find a way to make this smarter and avoid fetching duplicates
+            foreach(var interval in intervals)
+            {
+                AddAnalyzedIntervalToResults(rideName, interval.start, interval.end, ref result);
+            }
+
+            return result;
+        }
+
+        private void AddAnalyzedIntervalToResults(string rideName, DateTime? start, DateTime? end, 
+            ref Dictionary<string,List<IRideEffortAnalysis>> results)
+        {
+            var activities = dbFacade_.GetActivities(rideName, start, end);
+            if(!results.ContainsKey(rideName))
+            {
+                results[rideName] = new List<IRideEffortAnalysis>();                
+            }
+            results[rideName].Add(new RideEffortAnalysis(rideName, activities));
+
+            var segmentEfforts = dbFacade_.GetSegmentEffortsForActivity(rideName, start, end);
+            foreach(var kvp in segmentEfforts)
+            {
+                if(!results.ContainsKey(kvp.Key))
+                {
+                    results[kvp.Key] = new List<IRideEffortAnalysis>();
+                }
+                results[kvp.Key].Add(new RideEffortAnalysis(kvp.Key, kvp.Value));
+            }
+        }
     }
 }

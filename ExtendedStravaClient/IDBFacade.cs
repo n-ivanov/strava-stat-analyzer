@@ -21,9 +21,12 @@ namespace ExtendedStravaClient
         bool Insert(Segment segment);
 
         int GetLastUpdate();
-        Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, int? maxInterval);
-        List<long> GetSegmentIdsForActivity(string activityName);
+        
         List<IRideEffort> GetActivities(string activityName, int? maxInterval);
+        List<IRideEffort> GetActivities(string activityName, DateTime? start, DateTime? end);
+        Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, int? maxInterval);
+        Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, DateTime? start, DateTime? end);
+        List<long> GetSegmentIdsForActivity(string activityName);
 
         bool Update(Activity activity);
 

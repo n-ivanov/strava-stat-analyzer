@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic; 
+using System.Extensions;
+using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Linq;
-using System.Extensions;
-using System.Collections.Generic; 
 using ExtendedStravaClient;
 using CommandLine;
 
@@ -14,12 +15,28 @@ namespace StravaStatisticsAnalyzerConsole
         [Option('u', "update", HelpText = "Check for updates from Strava, which requires authenticating with the Strava API using OAuth.")]
         public bool Update {get; set;}
 
-        [Option('i', "intervals", Separator = ',', HelpText = "Intervals over which rides should be analyzed.")]
+        [Option('i', "intervals", Separator = ',', 
+            HelpText = "Numeric intervals over which rides should be analyzed (e.g. last 5 rides, last 30 rides, etc.)")]
         public IEnumerable<int> Intervals { get; set; }
 
         [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be analyzed.")]
         public IEnumerable<string> Rides {get; set;}
 
+        [Option('s', "startDate", HelpText = "Start date in the form yyyy/MM/dd")]
+        public string StartDateStr {get; set;}
+
+        public DateTime? StartDate =>  
+            DateTime.TryParseExact(StartDateStr, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
+                            ? dt 
+                            : (DateTime?)null; 
+
+        [Option('e', "endDate", HelpText = "End date in the form yyyy/MM/dd")]
+        public string EndDateStr {get; set;}
+
+        public DateTime? EndDate =>  
+            DateTime.TryParseExact(EndDateStr, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
+                            ? dt 
+                            : (DateTime?)null; 
         // [Option('v', "verbose", HelpText = "Verbose logging (Currently unimplemented)")]
         // public bool Verbose {get; set;}
     }
@@ -56,7 +73,14 @@ namespace StravaStatisticsAnalyzerConsole
                 task.Wait();     
             }
 
-            Analyze(options.Rides, options.Intervals);
+            if(options.Intervals.Count() != 0)
+            {
+                Analyze(options.Rides, options.Intervals);
+            }
+            else
+            {
+                Analyze(options.Rides, options.StartDate, options.EndDate);
+            }
         } 
 
         private static string Authenticate()
@@ -127,6 +151,22 @@ namespace StravaStatisticsAnalyzerConsole
             {
                 var results = stravaClient_.AnalyzeRide(ride, intervals.ToArray()); 
                 presenter.PresentResults(results, intervalsArr);
+                Console.WriteLine();
+            }
+        }
+
+        private static void Analyze(IEnumerable<string> rides, DateTime? start, DateTime? end)
+        {
+            if(rides == null || rides.Count() == 0)
+            {
+                Console.WriteLine("No rides specified. Analysis will not be conducted.");
+                return;
+            }
+            var presenter = new ConsoleResultPresenter();
+            foreach(var ride in rides)
+            {
+                var results = stravaClient_.AnalyzeRide(ride, new List<(DateTime? start, DateTime? end)>(){(start,end)}); 
+                presenter.PresentResults(results,new (DateTime? start, DateTime? end)[]{(start, end)});
                 Console.WriteLine();
             }
         }
