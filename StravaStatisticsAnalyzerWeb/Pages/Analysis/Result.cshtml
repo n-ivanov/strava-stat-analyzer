@@ -1,0 +1,41 @@
+@page
+@using System.Extensions
+@model StravaStatisticsAnalyzer.Web.Pages.Analysis.ResultModel
+
+@{
+    ViewData["Title"] = "Results";
+}
+
+<h1>Analysis Results</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.AnalysisResults[0].Name)
+            </th>
+            <th>
+                Average
+            </th>
+            <th>
+                Best
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.AnalysisResults) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            @foreach (var subResult in item.SubResults)
+            {
+                string convertedResult = $"{subResult.Time.Average.ToTime()} @ {subResult.Speed.Average}";
+                <td>
+                    @Html.DisplayFor(modelItem => convertedResult)
+                </td>
+            }
+        </tr>
+}
+    </tbody>
+</table>

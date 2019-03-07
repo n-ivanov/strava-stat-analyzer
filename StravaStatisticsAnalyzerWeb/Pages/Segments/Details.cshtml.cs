@@ -19,7 +19,7 @@ namespace StravaStatisticsAnalyzerWeb.Pages.Segments
         }
 
         public Segment Segment { get; set; }
-
+        public IList<SegmentEffort> SegmentEfforts {get;set;}
         public async Task<IActionResult> OnGetAsync(long? id)
         {
             if (id == null)
@@ -28,7 +28,12 @@ namespace StravaStatisticsAnalyzerWeb.Pages.Segments
             }
 
             Segment = await _context.Segment.FirstOrDefaultAsync(m => m.ID == id);
-
+            
+            var segmentEffortContext = 
+                (RazorPagesSegmentEffortContext)HttpContext.RequestServices
+                    .GetService(typeof(RazorPagesSegmentEffortContext));
+            SegmentEfforts = await segmentEffortContext.SegmentEffort.Where(e => e.SegmentID == id).ToListAsync();
+            
             if (Segment == null)
             {
                 return NotFound();

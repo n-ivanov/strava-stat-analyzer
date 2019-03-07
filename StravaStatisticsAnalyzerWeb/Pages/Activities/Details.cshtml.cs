@@ -12,6 +12,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Activities
     public class DetailsModel : PageModel
     {
         private readonly StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext _context;
+        private StravaStatisticsAnalyzer.Web.Models.RazorPagesSegmentEffortContext _segmentEffortContext;
 
         public DetailsModel(StravaStatisticsAnalyzer.Web.Models.RazorPagesActivityContext context)
         {
@@ -19,6 +20,7 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Activities
         }
 
         public Activity Activity { get; set; }
+        public IList<SegmentEffort> SegmentEfforts { get; set; }
 
         public async Task<IActionResult> OnGetAsync(long? id)
         {
@@ -26,8 +28,12 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Activities
             {
                 return NotFound();
             }
-
+            var segmentEffortContext = 
+                (RazorPagesSegmentEffortContext)HttpContext.RequestServices
+                    .GetService(typeof(RazorPagesSegmentEffortContext));
+                    
             Activity = await _context.Activity.FirstOrDefaultAsync(m => m.ID == id);
+            SegmentEfforts= await segmentEffortContext.SegmentEffort.Where(e => e.ActivityID == Activity.ID).ToListAsync();
 
             if (Activity == null)
             {

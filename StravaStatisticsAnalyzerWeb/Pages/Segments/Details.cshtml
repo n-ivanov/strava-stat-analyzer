@@ -1,4 +1,5 @@
 @page
+@using System.Extensions
 @model StravaStatisticsAnalyzerWeb.Pages.Segments.DetailsModel
 
 @{
@@ -79,6 +80,56 @@
         </dd>
     </dl>
 </div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.SegmentEfforts[0].Distance)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SegmentEfforts[0].MovingTime)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SegmentEfforts[0].ElapsedTime)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SegmentEfforts[0].AvgSpeed)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SegmentEfforts[0].DateTime)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.SegmentEfforts) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Distance)
+            </td>
+            <td>
+                @{string convertedItemMovingTime = item.MovingTime.ToTime();} 
+                @Html.DisplayFor(modelItem => convertedItemMovingTime)
+            </td>
+            <td>
+                @{string convertedItemElapsedTime = item.ElapsedTime.ToTime();} 
+                @Html.DisplayFor(modelItem => convertedItemElapsedTime)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AvgSpeed)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DateTime)
+            </td>
+            <td>
+                <a asp-page="../SegmentEfforts/Details" asp-route-id="@item.ID">Details</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+
 <div>
     <a asp-page="./Edit" asp-route-id="@Model.Segment.ID">Edit</a> |
     <a asp-page="./Index">Back to List</a>
