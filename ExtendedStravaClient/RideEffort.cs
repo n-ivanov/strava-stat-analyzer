@@ -2,7 +2,7 @@ using System;
 
 namespace ExtendedStravaClient
 {
-        public interface IRideEffort
+    public interface IRideEffort
     {
         long Id { get; }
         double AverageSpeed { get; }

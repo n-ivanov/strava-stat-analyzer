@@ -10,17 +10,17 @@ namespace ExtendedStravaClient
     {
         Fetcher fetcher_;
         IDBFacade dbFacade_;
-
+        private static List<long> insertedIds_;
         public Client(IDBFacade facade)
         {
             fetcher_ = new Fetcher();
             dbFacade_ = facade;
         }
 
-        public void Initialize(string accessToken)
+        public bool Initialize(string accessToken)
         {
             fetcher_.Initialize(accessToken);
-            dbFacade_.Initialize();
+            return dbFacade_.Initialize();
         }
 
         public async Task GetAndSaveNewActivities(bool getDetailedActivityInformation = true)
@@ -28,8 +28,7 @@ namespace ExtendedStravaClient
             var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
             {
-                // lastUpdate = 1534982400;
-                lastUpdate = 1551398400;
+                lastUpdate = 1534982400;
             }
             var activities = await fetcher_.GetAllActivities(null, lastUpdate);
             dbFacade_.Insert(activities);
@@ -37,22 +36,61 @@ namespace ExtendedStravaClient
             {
                 await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList());
             }
+            else
+            {
+                insertedIds_ = activities.Select(s => s.Id).ToList();
+                Console.WriteLine($"Saved {insertedIds_.Count} activities for which detailed information has not been fetched.");
+            }
         }
 
-        public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds)
+        public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds = null)
         {
+            if(activityIds == null)
+            {
+                if(insertedIds_ == null)
+                {
+                    return;
+                }
+                Console.WriteLine($" Retrieved saved {insertedIds_.Count} activities for which detailed information has not been fetched.");
+                activityIds = insertedIds_;
+            }
             foreach(var activityId in activityIds)
             {
                 var detailedActivity = await fetcher_.GetDetailedActivity(activityId);
-                // dbFacade_.Update(activity);
                 if(detailedActivity == null)
                 {
                     Console.WriteLine("Unable to fetch detailed activity. Aborting insertions...");
                     break;
                 }
-                dbFacade_.Insert(detailedActivity.Segment_Efforts);
-                dbFacade_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
+                Console.WriteLine($"Saving detailed information for activity {detailedActivity.Id}...");
+                try
+                {
+                    dbFacade_.Insert(detailedActivity.Segment_Efforts);
+                    dbFacade_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Unable to save information for activity {detailedActivity.Id}.");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                    if(ex.InnerException != null)
+                    {
+                        Console.WriteLine(ex.InnerException.Message);
+                        Console.WriteLine(ex.InnerException.StackTrace);
+                    }
+                }
             }
+        }
+
+        public async Task UpdateActivity(long activityId)
+        {
+            var detailedActivity = await fetcher_.GetDetailedActivity(activityId, false);
+            if(detailedActivity == null)
+            {
+                Console.WriteLine("Unable to fetch detailed activity. Aborting update...");
+                return;
+            }
+            dbFacade_.Update(detailedActivity);
         }
 
         public Dictionary<string,List<IRideEffortAnalysis>> AnalyzeRide(string rideName, int[] intervals)

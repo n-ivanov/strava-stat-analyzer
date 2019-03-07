@@ -29,5 +29,10 @@ namespace System.Extensions
             var hours = totalMinutes / 60;
             return $"{hours:00}:{totalMinutes%60:00}:{seconds:00}";
         }
+
+        public static string ToTime(this double time)
+        {
+            return ((int)Math.Floor(time)).ToTime();
+        }
     }
 }

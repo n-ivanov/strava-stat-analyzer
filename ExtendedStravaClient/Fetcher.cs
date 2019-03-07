@@ -73,10 +73,10 @@ namespace ExtendedStravaClient
 
         public async Task<List<Activity>> GetAllActivities(int? before, int? after)
         {
-            Console.WriteLine($"Fetching all activities {(before.HasValue? $"before {before.Value.FromEpoch()} " : "")}{(after.HasValue ? $"after {after.Value.FromEpoch()}" : "")}."); 
+            Console.WriteLine($"Fetching all activities{(before.HasValue? $" before {before.Value.FromEpoch()} " : "")}{(after.HasValue ? $" after {after.Value.FromEpoch()}" : "")}."); 
             List<Activity> activities = new List<Activity>();
             int page = 1;
-            int perList = 50;
+            int perList = 100;
             List<Activity> partialActivities;
             while((partialActivities = await GetActivities(before, after, page++, perList)) != null && partialActivities.Count != 0)
             {
