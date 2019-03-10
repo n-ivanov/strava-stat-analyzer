@@ -1,14 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Extensions;
 using System.Text;
 using System.Linq;
-using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 
 namespace ExtendedStravaClient
 {
     public interface IDBFacade
     {
+        List<long> ActivityIds {get;}
+
         bool Initialize();
         void Shutdown();
 

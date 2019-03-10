@@ -5,16 +5,15 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using ExtendedStravaClient;
 using CommandLine;
 
 namespace StravaStatisticsAnalyzerConsole
 {
-    public class Options
+    [Verb("analyze", HelpText = "Analyze your loaded Strava rides and ride segments.")]
+    public class AnalyzeOptions
     {
-        [Option('u', "update", HelpText = "Check for updates from Strava, which requires authenticating with the Strava API using OAuth.")]
-        public bool Update {get; set;}
-
         [Option('i', "intervals", Separator = ',', 
             HelpText = "Numeric intervals over which rides should be analyzed (e.g. last 5 rides, last 30 rides, etc.)")]
         public IEnumerable<int> Intervals { get; set; }
@@ -25,20 +24,41 @@ namespace StravaStatisticsAnalyzerConsole
         [Option('s', "startDate", HelpText = "Start date in the form yyyy/MM/dd")]
         public string StartDateStr {get; set;}
 
-        public DateTime? StartDate =>  
-            DateTime.TryParseExact(StartDateStr, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
-                            ? dt 
-                            : (DateTime?)null; 
+        public DateTime? StartDate =>  ParseToDateTime(StartDateStr);
 
         [Option('e', "endDate", HelpText = "End date in the form yyyy/MM/dd")]
         public string EndDateStr {get; set;}
 
-        public DateTime? EndDate =>  
-            DateTime.TryParseExact(EndDateStr, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
-                            ? dt 
-                            : (DateTime?)null; 
-        // [Option('v', "verbose", HelpText = "Verbose logging (Currently unimplemented)")]
-        // public bool Verbose {get; set;}
+        public DateTime? EndDate => ParseToDateTime(EndDateStr);
+
+        private DateTime? ParseToDateTime(string str)
+        {
+            return DateTime.TryParseExact(str, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
+                    ? dt 
+                    : (DateTime?)null; 
+        }
+    }
+
+
+    [Verb("load", HelpText = "Load rides from Strava")]
+    public class LoadOptions
+    {
+        [Option('s', "startDate", HelpText = "Start date in the form yyyy/MM/dd")]
+        public string StartDateStr {get; set;}
+
+        public DateTime? StartDate =>  ParseToDateTime(StartDateStr);
+
+        [Option('e', "endDate", HelpText = "End date in the form yyyy/MM/dd")]
+        public string EndDateStr {get; set;}
+
+        public DateTime? EndDate => ParseToDateTime(EndDateStr);
+
+        private DateTime? ParseToDateTime(string str)
+        {
+            return DateTime.TryParseExact(str, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
+                    ? dt 
+                    : (DateTime?)null; 
+        }            
     }
 
     class Program
@@ -49,39 +69,31 @@ namespace StravaStatisticsAnalyzerConsole
 
         static void Main(string[] args)
         {
-            Console.WriteLine(" o__  ");
-            Console.WriteLine(",>/_ ");
-            Console.WriteLine("(*)`(*)");
+            Parser.Default.ParseArguments<LoadOptions,AnalyzeOptions>(args)
+                .MapResult(
+                    (LoadOptions loadOpts) => RunLoadAndReturnExitCode(loadOpts),
+                    (AnalyzeOptions analyzeOpts) => RunAnalyzeAndReturnExitCode(analyzeOpts),
+                    (errs) => 1
+                );
+        } 
 
-            Options options = null;
-            Parser.Default.ParseArguments<Options>(args)
-                   .WithParsed<Options>(o =>
-                   {
-                       options = o;
-                   });
-
+        private static int RunLoadAndReturnExitCode(LoadOptions opts)
+        {
             string token = null;
-            if(options.Update)
-            {
-                token = Authenticate();
-            }
-           
+            token = Authenticate();
             stravaClient_.Initialize(token);
-            if(options.Update)
+            Task task;
+            if(opts.StartDate != null || opts.EndDate != null)
             {
-                var task = stravaClient_.GetAndSaveNewActivities();
-                task.Wait();     
-            }
-
-            if(options.Intervals.Count() != 0)
-            {
-                Analyze(options.Rides, options.Intervals);
+                task = stravaClient_.GetAndSaveActivities(opts.StartDate, opts.EndDate);
             }
             else
             {
-                Analyze(options.Rides, options.StartDate, options.EndDate);
+                task = stravaClient_.GetAndSaveNewActivities();
             }
-        } 
+            task.Wait();  
+            return 0;
+        }
 
         private static string Authenticate()
         {
@@ -136,6 +148,20 @@ namespace StravaStatisticsAnalyzerConsole
             var deserializedResponse = AuthenticationResponse.Deserialize(responseText);
             Console.WriteLine($"Welcome {deserializedResponse.Athlete?.FirstName}! Your token is {deserializedResponse.AccessToken}.");
             return deserializedResponse.AccessToken;
+        }
+
+        private static int RunAnalyzeAndReturnExitCode(AnalyzeOptions opts)
+        {
+            stravaClient_.Initialize(null);
+            if(opts.Intervals.Count() != 0)
+            {
+                Analyze(opts.Rides, opts.Intervals);
+            }
+            else
+            {
+                Analyze(opts.Rides, opts.StartDate, opts.EndDate);
+            }
+            return 0;
         }
 
         private static void Analyze(IEnumerable<string> rides, IEnumerable<int> intervals)

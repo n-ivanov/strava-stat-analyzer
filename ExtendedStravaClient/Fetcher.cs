@@ -27,7 +27,7 @@ namespace ExtendedStravaClient
             var request = new RestRequest(Method.GET);
             request.Resource = $"/activities/{id}";
             request.AddHeader("Authorization", $"Bearer {accessToken_}");
-            request.AddParameter("include_all_efforts",true);
+            request.AddParameter("include_all_efforts",includeAllEfforts);
 
             var cancellationTokenSource = new CancellationTokenSource();
             var response = await restClient_.ExecuteGetTaskAsync<Activity>(request, cancellationTokenSource.Token);
@@ -37,10 +37,6 @@ namespace ExtendedStravaClient
                 Console.WriteLine($"An error occurred during your request: {response.ErrorMessage} - {response.ErrorException}");
                 Console.WriteLine($"({response.StatusCode}) - {response.StatusDescription}");
                 return null;
-            }
-            else 
-            {
-                Console.WriteLine($"Response status code - {response.StatusCode}");
             }
             return response.Data;
         }
@@ -86,6 +82,5 @@ namespace ExtendedStravaClient
             Console.WriteLine($"Obtained {activities.Count} activities");
             return activities;
         }
-
     }
 }

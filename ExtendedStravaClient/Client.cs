@@ -1,4 +1,5 @@
 using System;
+using System.Extensions;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
@@ -31,16 +32,13 @@ namespace ExtendedStravaClient
                 lastUpdate = 1534982400;
             }
             var activities = await fetcher_.GetAllActivities(null, lastUpdate);
-            dbFacade_.Insert(activities);
-            if(getDetailedActivityInformation)
-            {
-                await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList());
-            }
-            else
-            {
-                insertedIds_ = activities.Select(s => s.Id).ToList();
-                Console.WriteLine($"Saved {insertedIds_.Count} activities for which detailed information has not been fetched.");
-            }
+            await InsertActivities(activities, getDetailedActivityInformation);
+        }
+
+        public async Task GetAndSaveActivities(DateTime? startInterval, DateTime? endInterval, bool getDetailedActivityInformation = true)
+        {
+            var activities = await fetcher_.GetAllActivities(startInterval.ToEpoch(), endInterval.ToEpoch());
+            await InsertActivities(activities, getDetailedActivityInformation);
         }
 
         public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds = null)
@@ -80,6 +78,16 @@ namespace ExtendedStravaClient
                     }
                 }
             }
+        }
+
+        public async Task UpdateActivities()
+        {
+            var activitIds = dbFacade_.ActivityIds;
+            foreach(var activityId in activitIds)
+            {
+                await UpdateActivity(activityId);
+            }
+            Console.WriteLine($"Successfully updated {activitIds.Count} activities.");
         }
 
         public async Task UpdateActivity(long activityId)
@@ -145,6 +153,21 @@ namespace ExtendedStravaClient
 
             return result;
         }
+
+        private async Task InsertActivities(List<Activity> activities, bool getDetailedActivityInformation = true)
+        {
+            dbFacade_.Insert(activities);
+            if(getDetailedActivityInformation)
+            {
+                await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList());
+            }
+            else
+            {
+                insertedIds_ = activities.Select(s => s.Id).ToList();
+                Console.WriteLine($"Saved {insertedIds_.Count} activities for which detailed information has not been fetched.");
+            }
+        }
+
 
         private void AddAnalyzedIntervalToResults(string rideName, DateTime? start, DateTime? end, 
             ref Dictionary<string,List<IRideEffortAnalysis>> results)

@@ -13,6 +13,17 @@ namespace System.Extensions
             return (int)Math.Floor(diff.TotalSeconds);
         }
 
+        public static int? ToEpoch(this DateTime? date)
+        {
+            if(!date.HasValue)
+            {
+                return (int?)null;
+            }
+            DateTime origin = epoch_;
+            TimeSpan diff = date.Value.ToUniversalTime() - origin;
+            return (int)Math.Floor(diff.TotalSeconds);
+        }
+
         public static DateTime FromEpoch(this int epochTime)
         {
             DateTime origin = epoch_;

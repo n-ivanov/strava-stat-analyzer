@@ -14,6 +14,17 @@ namespace StravaStatisticsAnalyzerConsole
         private bool createNewTables_= false;
         private HashSet<long> insertedSegments_;
 
+        public List<long> ActivityIds 
+        {
+            get
+            {
+                return SqlQuery<long>($"SELECT id FROM {Configuration.MySQL.Tables.Activity.NAME}",
+                    "Unable to fetch activity IDs.",
+                    r => r.GetInt64("id")
+                );
+            }
+        }
+
         public bool Initialize()
         {
             insertedSegments_ = new HashSet<long>();
