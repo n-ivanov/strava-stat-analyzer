@@ -15,10 +15,10 @@
                 @Html.DisplayNameFor(model => model.AnalysisResults[0].Name)
             </th>
             <th>
-                Average
+                Average (hh:mm:ss @@ @Model.UnitsStr)
             </th>
             <th>
-                Best
+                Best (hh:mm:ss @@ @Model.UnitsStr)
             </th>
         </tr>
     </thead>
@@ -30,11 +30,11 @@
             </td>
             @foreach (var subResult in item.SubResults)
             {
-                string convertedAvgResult = $"{subResult.Time.Average.ToTime()} @ {subResult.Speed.Average}";
+                string convertedAvgResult = $"{subResult.Time.Average.ToTime()} @ {Model.ConvertUnitsAndRound(subResult.Speed.Average)}";
                 <td>
                     @Html.DisplayFor(modelItem => convertedAvgResult)
                 </td>
-                string convertedBestResult = $"{subResult.Time.Minimum.ToTime()} @ {subResult.Speed.Maximum}";
+                string convertedBestResult = $"{subResult.Time.Minimum.ToTime()} @ {Model.ConvertUnitsAndRound(subResult.Speed.Maximum)}";
                 <td>
                     @Html.DisplayFor(modelItem => convertedBestResult)
                 </td>

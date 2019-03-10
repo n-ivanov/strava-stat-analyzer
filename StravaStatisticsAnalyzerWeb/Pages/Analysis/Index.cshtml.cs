@@ -11,6 +11,13 @@ using StravaStatisticsAnalyzer.Web.Models;
 
 namespace StravaStatisticsAnalyzer.Web.Pages.Analysis
 {
+    public enum VelocityUnits
+    {
+        M_S,
+        KM_H,
+        Mi_H
+    }
+
     public class IndexModel : PageModel
     {
         public IndexModel()
@@ -21,6 +28,9 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Analysis
 
         [BindProperty]
         public IList<AnalysisRequest> AnalysisRequests { get;set; }
+
+        [BindProperty]
+        public VelocityUnits Units {get;set;}
 
         public async Task OnGetAsync()
         {
@@ -37,7 +47,8 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Analysis
                     { 
                         activityFilter=request.ActivityFilter, 
                         start=request.StartInterval.ToEpoch(), 
-                        end=request.EndInterval.ToEpoch()
+                        end=request.EndInterval.ToEpoch(),
+                        units=Units
                     });
             }
             return NotFound();
