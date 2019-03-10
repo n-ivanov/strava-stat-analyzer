@@ -30,9 +30,13 @@
             </td>
             @foreach (var subResult in item.SubResults)
             {
-                string convertedResult = $"{subResult.Time.Average.ToTime()} @ {subResult.Speed.Average}";
+                string convertedAvgResult = $"{subResult.Time.Average.ToTime()} @ {subResult.Speed.Average}";
                 <td>
-                    @Html.DisplayFor(modelItem => convertedResult)
+                    @Html.DisplayFor(modelItem => convertedAvgResult)
+                </td>
+                string convertedBestResult = $"{subResult.Time.Minimum.ToTime()} @ {subResult.Speed.Maximum}";
+                <td>
+                    @Html.DisplayFor(modelItem => convertedBestResult)
                 </td>
             }
         </tr>

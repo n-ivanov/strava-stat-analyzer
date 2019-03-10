@@ -193,8 +193,8 @@ namespace StravaStatisticsAnalyzer.Web
 
         public List<long> GetSegmentIdsForActivity(string activityName)
         {
-            var activityId = ActivityContext.Activity.Where(a => a.Name == activityName).FirstOrDefault()?.ID;
-            var segmentsWithCount = SegmentEffortContext.SegmentEffort.Where(s => s.ActivityID == activityId)
+            var activityIds = ActivityContext.Activity.Where(a => a.Name == activityName).Select(a => a.ID).ToList();
+            var segmentsWithCount = SegmentEffortContext.SegmentEffort.Where(s => activityIds.Contains(s.ActivityID))
                 .GroupBy(s => s.SegmentID).OrderBy(g => g.Count())
                 .Select(g => new Tuple<long,long>(g.Key, g.Count())).ToList();
             var averageCount = segmentsWithCount.Select(i => i.Item2).Average();
@@ -238,7 +238,7 @@ namespace StravaStatisticsAnalyzer.Web
         {
             if(SegmentEffortContext != null)
             {
-                var segmentEfforts = SegmentEffortContext.SegmentEffort.Where(a => a.ID == segmentId).OrderByDescending(a => a.DateTime).ToList();
+                var segmentEfforts = SegmentEffortContext.SegmentEffort.Where(a => a.SegmentID == segmentId).OrderByDescending(a => a.DateTime).ToList();
                 if(maxInterval.HasValue && maxInterval < segmentEfforts.Count)
                 {
                     segmentEfforts = segmentEfforts.GetRange(0, maxInterval.Value);
@@ -252,7 +252,7 @@ namespace StravaStatisticsAnalyzer.Web
         {
             if(SegmentEffortContext != null)
             {
-                var segmentEfforts = SegmentEffortContext.SegmentEffort.Where(a => a.ID == segmentId && a.DateTime >= start && a.DateTime <= end);
+                var segmentEfforts = SegmentEffortContext.SegmentEffort.Where(a => a.SegmentID == segmentId && a.DateTime >= start && a.DateTime <= end);
                 return segmentEfforts.Select(a => (IRideEffort)new RideEffort(a.ID, a.AvgSpeed, a.MovingTime, a.DateTime)).ToList();
             }
             return new List<IRideEffort>();
