@@ -16,23 +16,31 @@ namespace StravaStatisticsAnalyzer.Web
     public class ContextDBFacade : IDBFacade
     {
         private HashSet<long> existingSegments = new HashSet<long>();
-        public RazorPagesActivityContext ActivityContext {get;set;}
-        public RazorPagesSegmentEffortContext SegmentEffortContext {get;set;}
+        private Lazy<RazorPagesActivityContext> activityContext_;
+        private Lazy<RazorPagesSegmentEffortContext> segmentEffortContext_;
+        private Lazy<RazorPagesSegmentContext> segmentContext_;
 
-        public RazorPagesSegmentContext SegmentContext {get;set;}
+        public RazorPagesActivityContext ActivityContext => activityContext_.Value;
+        public RazorPagesSegmentEffortContext SegmentEffortContext => segmentEffortContext_.Value;
+        public RazorPagesSegmentContext SegmentContext => segmentContext_.Value;
         public IServiceProvider ServiceProvider {get;set;}
+        public List<long> ActivityIds => ActivityContext.Activity.Select(a => a.ID).ToList();
 
         public bool Initialize()
         {
-            ActivityContext = (RazorPagesActivityContext)ServiceProvider.GetService(typeof(RazorPagesActivityContext));
-            SegmentEffortContext = (RazorPagesSegmentEffortContext)ServiceProvider.GetService(typeof(RazorPagesSegmentEffortContext));
-            SegmentContext = (RazorPagesSegmentContext)ServiceProvider.GetService(typeof(RazorPagesSegmentContext));
-            
-            foreach(var segment in SegmentContext.Segment)
-            {
-                existingSegments.Add(segment.ID);
-            }
-            return ActivityContext != null && SegmentContext != null && SegmentEffortContext != null;
+            activityContext_ = new Lazy<RazorPagesActivityContext>(() => (RazorPagesActivityContext)ServiceProvider.GetService(typeof(RazorPagesActivityContext)));
+            segmentEffortContext_ = new Lazy<RazorPagesSegmentEffortContext>(() => 
+                (RazorPagesSegmentEffortContext)ServiceProvider.GetService(typeof(RazorPagesSegmentEffortContext)));
+            segmentContext_ = new Lazy<RazorPagesSegmentContext>(() => 
+                {
+                    var context = (RazorPagesSegmentContext)ServiceProvider.GetService(typeof(RazorPagesSegmentContext));
+                    foreach(var segment in context.Segment)
+                    {
+                        existingSegments.Add(segment.ID);
+                    }
+                    return context;
+                });
+            return ServiceProvider != null;
         }
 
         public void Shutdown()
@@ -219,6 +227,10 @@ namespace StravaStatisticsAnalyzer.Web
 
         public bool Update(ExtendedStravaClient.Activity activity)
         {
+            if(ActivityContext != null)
+            {
+                ActivityContext.Update(activity.ToModel());
+            }
             return false;
         }
 
