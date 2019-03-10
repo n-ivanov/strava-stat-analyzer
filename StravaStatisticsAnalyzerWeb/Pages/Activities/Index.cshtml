@@ -10,6 +10,7 @@
 
 <p>
     <a asp-action="GetActivities" asp-controller="Strava" class="btn btn-default">Get activities from Strava</a>
+    <a asp-action="RefreshActivities" asp-controller="Strava" class="btn btn-default">Refresh</a>
 </p>
 <table class="table">
     <thead>
@@ -71,7 +72,7 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.Activity.OrderByDescending(item => item.DateTime)) {
+@foreach (var item in Model.Activity) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
@@ -137,3 +138,19 @@
 }
     </tbody>
 </table>
+
+@{
+    var prevDisabled = !Model.Activity.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.Activity.HasNextPage ? "disabled" : "";
+}
+
+<a asp-page="./Index"
+   asp-route-pageIndex="@(Model.Activity.PageIndex - 1)"
+   class="btn btn-default @prevDisabled">
+    Previous
+</a>
+<a asp-page="./Index"
+   asp-route-pageIndex="@(Model.Activity.PageIndex + 1)"
+   class="btn btn-default @nextDisabled">
+    Next
+</a>

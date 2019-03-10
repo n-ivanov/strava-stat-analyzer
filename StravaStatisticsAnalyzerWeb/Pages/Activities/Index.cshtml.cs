@@ -19,11 +19,13 @@ namespace StravaStatisticsAnalyzer.Web.Pages.Activities
             _context = context;
         }
 
-        public IList<Activity> Activity { get;set; }
+        public PaginatedList<Activity> Activity { get;set; }
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(int? pageIndex)
         {
-            Activity = await _context.Activity.ToListAsync();
+            IQueryable<Activity> activityQuery = from a in _context.Activity select a; 
+
+            Activity = await PaginatedList<Activity>.CreateAsync(activityQuery.AsNoTracking(), pageIndex ?? 1);
         }
     }
 }

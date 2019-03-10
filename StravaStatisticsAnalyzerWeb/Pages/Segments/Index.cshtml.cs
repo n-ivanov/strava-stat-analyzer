@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using StravaStatisticsAnalyzer.Web;
 using StravaStatisticsAnalyzer.Web.Models;
 
 namespace StravaStatisticsAnalyzerWeb.Pages.Segments
@@ -18,11 +19,13 @@ namespace StravaStatisticsAnalyzerWeb.Pages.Segments
             _context = context;
         }
 
-        public IList<Segment> Segment { get;set; }
+        public PaginatedList<Segment> Segment { get;set; }
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(int? pageIndex)
         {
-            Segment = await _context.Segment.ToListAsync();
+            IQueryable<Segment> segmentQuery = from s in _context.Segment select s; 
+
+            Segment = await PaginatedList<Segment>.CreateAsync(segmentQuery.AsNoTracking(), pageIndex ?? 1);
         }
     }
 }

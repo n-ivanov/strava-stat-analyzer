@@ -59,3 +59,20 @@
 }
     </tbody>
 </table>
+
+@{
+    var prevDisabled = !Model.SegmentEffort.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.SegmentEffort.HasNextPage ? "disabled" : "";
+}
+
+<a asp-page="./Index"
+   asp-route-pageIndex="@(Model.SegmentEffort.PageIndex - 1)"
+   class="btn btn-default @prevDisabled">
+    Previous
+</a>
+<a asp-page="./Index"
+   asp-route-pageIndex="@(Model.SegmentEffort.PageIndex + 1)"
+   class="btn btn-default @nextDisabled">
+    Next
+</a>
+

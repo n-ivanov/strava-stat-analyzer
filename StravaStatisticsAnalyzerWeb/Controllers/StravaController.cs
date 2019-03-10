@@ -65,6 +65,27 @@ namespace StravaStatisticsAnalyzer.Web
 
             return Redirect("../Activities");
         }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> RefreshActivities(string returnUrl = "/")
+        {
+            string accessToken = await HttpContext.GetTokenAsync("access_token");
+            var client = new Client(new ContextDBFacade(){ServiceProvider = HttpContext.RequestServices});
+            client.Initialize(accessToken);         
+
+            try
+            {
+                await client.UpdateActivities();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred adding activities to the DB.");
+            }
+
+            return Redirect("../Activities");
+        }
+
     }
 }
 
