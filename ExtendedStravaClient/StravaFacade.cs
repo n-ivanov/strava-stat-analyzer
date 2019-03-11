@@ -8,11 +8,11 @@ using RestSharp.Extensions;
 
 namespace ExtendedStravaClient
 {
-    public class Fetcher
+    public class StravaFacade
     {
         private string accessToken_;
         private RestClient restClient_;
-        public Fetcher()
+        public StravaFacade()
         {
             restClient_ = new RestClient("https://www.strava.com/api/v3");
         }
@@ -81,6 +81,33 @@ namespace ExtendedStravaClient
             }
             Console.WriteLine($"Obtained {activities.Count} activities");
             return activities;
+        }
+
+        public async Task<Activity> ModifyActivity(long id, bool? commute = null, string description = null, string name = null, long? gearId = null)
+        {
+            if(!commute.HasValue && description == null && name == null && !gearId.HasValue)
+            {
+                Console.WriteLine($"Ignoring NOP update request for {id}.");
+                return null;
+            }
+            var request = new RestRequest(Method.PUT);
+            request.Resource = $"/activities/{id}";
+            request.AddHeader("Authorization", $"Bearer {accessToken_}");
+            request.AddNullableParameter("commute", commute);
+            request.AddNullableParameter("gear_id", gearId);
+            request.AddNullableParameter("name", name);
+            request.AddNullableParameter("description", description);
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var response = await restClient_.ExecuteTaskAsync<Activity>(request, cancellationTokenSource.Token);
+
+            if(!response.IsSuccessful)
+            {
+                Console.WriteLine($"An error occurred during your request: {response.ErrorMessage} - {response.ErrorException}");
+                Console.WriteLine($"({response.StatusCode}) - {response.StatusDescription}");
+                return null;
+            }
+            return response.Data;
         }
     }
 }

@@ -1,4 +1,5 @@
-using RestSharp;
+using System;
+using System.Text;
 
 namespace RestSharp.Extensions
 {
@@ -9,6 +10,14 @@ namespace RestSharp.Extensions
             if(param.HasValue)
             {
                 req.AddParameter(paramName, param.Value.ToString());
+            }
+        }
+
+        public static void AddNullableParameter(this RestRequest req, string paramName, string param)
+        {
+            if(!String.IsNullOrWhiteSpace(param))
+            {
+                req.AddParameter(paramName, param);
             }
         }
     }

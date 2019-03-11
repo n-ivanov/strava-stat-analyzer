@@ -11,22 +11,14 @@ using CommandLine;
 
 namespace StravaStatisticsAnalyzerConsole
 {
-    [Verb("analyze", HelpText = "Analyze your loaded Strava rides and ride segments.")]
-    public class AnalyzeOptions
+    public class DateIntervalOptions
     {
-        [Option('i', "intervals", Separator = ',', 
-            HelpText = "Numeric intervals over which rides should be analyzed (e.g. last 5 rides, last 30 rides, etc.)")]
-        public IEnumerable<int> Intervals { get; set; }
-
-        [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be analyzed.")]
-        public IEnumerable<string> Rides {get; set;}
-
-        [Option('s', "startDate", HelpText = "Start date in the form yyyy/MM/dd")]
+        [Option('s', "startDate", HelpText = "Start date for the interval in the form yyyy/MM/dd")]
         public string StartDateStr {get; set;}
 
         public DateTime? StartDate =>  ParseToDateTime(StartDateStr);
 
-        [Option('e', "endDate", HelpText = "End date in the form yyyy/MM/dd")]
+        [Option('e', "endDate", HelpText = "End date for the interval in the form yyyy/MM/dd")]
         public string EndDateStr {get; set;}
 
         public DateTime? EndDate => ParseToDateTime(EndDateStr);
@@ -39,26 +31,48 @@ namespace StravaStatisticsAnalyzerConsole
         }
     }
 
+    [Verb("analyze", HelpText = "Analyze your loaded Strava rides and ride segments.")]
+    public class AnalyzeOptions : DateIntervalOptions
+    {
+        [Option('i', "intervals", Separator = ',', 
+            HelpText = "Numeric intervals over which rides should be analyzed (e.g. last 5 rides, last 30 rides, etc.)")]
+        public IEnumerable<int> Intervals { get; set; }
+
+        [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be analyzed.")]
+        public IEnumerable<string> Rides {get; set;}
+    }
+
 
     [Verb("load", HelpText = "Load rides from Strava")]
-    public class LoadOptions
+    public class LoadOptions : DateIntervalOptions
+    {          
+        [Option("reload", HelpText = "Reload the rides from Strava")]
+        public bool Reload {get;set;}
+
+        [Option('i', "id", HelpText = "Strava ID for the ride that should be reloaded. Cannot be used in conjunction with date intervals or ride names.")]
+        public long? Id {get;set;}
+    }
+
+    [Verb("modify", HelpText = "Modify loaded Strava rides")]
+    public class ModifyOptions : DateIntervalOptions
     {
-        [Option('s', "startDate", HelpText = "Start date in the form yyyy/MM/dd")]
-        public string StartDateStr {get; set;}
+        [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be modified.")]
+        public IEnumerable<string> Rides {get; set;}
 
-        public DateTime? StartDate =>  ParseToDateTime(StartDateStr);
+        [Option('i', "id", HelpText = "Strava ID for the ride that should be modified. Cannot be used in conjunction with date intervals or ride names.")]
+        public long? Id {get;set;}
 
-        [Option('e', "endDate", HelpText = "End date in the form yyyy/MM/dd")]
-        public string EndDateStr {get; set;}
+        [Option('c', "commute", HelpText = "Set the commute flag for the selected ride(s) to the indicated value ('true' or 'false').")]
+        public string Commute {get;set;}
 
-        public DateTime? EndDate => ParseToDateTime(EndDateStr);
+        [Option('n', "name", HelpText = "New name for the selected ride(s)")]
+        public string Name {get;set;}
 
-        private DateTime? ParseToDateTime(string str)
-        {
-            return DateTime.TryParseExact(str, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt) 
-                    ? dt 
-                    : (DateTime?)null; 
-        }            
+        [Option('d', "description", HelpText = "New description for the selected ride(s)")]
+        public string Description {get;set;}
+
+        [Option('w', "weather", HelpText = "Add weather information to the description for the selected ride(s) if it is not already present.")]
+        public bool Weather {get;set;}
     }
 
     class Program
@@ -69,10 +83,11 @@ namespace StravaStatisticsAnalyzerConsole
 
         static void Main(string[] args)
         {
-            Parser.Default.ParseArguments<LoadOptions,AnalyzeOptions>(args)
+            Parser.Default.ParseArguments<LoadOptions,AnalyzeOptions,ModifyOptions>(args)
                 .MapResult(
                     (LoadOptions loadOpts) => RunLoadAndReturnExitCode(loadOpts),
                     (AnalyzeOptions analyzeOpts) => RunAnalyzeAndReturnExitCode(analyzeOpts),
+                    (ModifyOptions modifyOpts) => RunModifyAndReturnExitCode(modifyOpts),
                     (errs) => 1
                 );
         } 
@@ -83,13 +98,27 @@ namespace StravaStatisticsAnalyzerConsole
             token = Authenticate();
             stravaClient_.Initialize(token);
             Task task;
-            if(opts.StartDate != null || opts.EndDate != null)
+            if(!opts.Reload)
             {
-                task = stravaClient_.GetAndSaveActivities(opts.StartDate, opts.EndDate);
+                if(opts.StartDate != null || opts.EndDate != null)
+                {
+                    task = stravaClient_.GetAndSaveActivities(opts.StartDate, opts.EndDate);
+                }
+                else
+                {
+                    task = stravaClient_.GetAndSaveNewActivities();
+                }
             }
             else
             {
-                task = stravaClient_.GetAndSaveNewActivities();
+                if(opts.Id.HasValue)
+                {
+                    task = stravaClient_.ReloadActivity(opts.Id.Value);
+                }
+                else
+                {
+                    task = stravaClient_.ReloadActivities();
+                }
             }
             task.Wait();  
             return 0;
@@ -102,7 +131,7 @@ namespace StravaStatisticsAnalyzerConsole
             listener.Start();
 
             var targetAuthUrl =  
-                $"https://www.strava.com/oauth/authorize?client_id={Configuration.Strava.CLIENT_ID}&redirect_uri=http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:read";
+                $"https://www.strava.com/oauth/authorize?client_id={Configuration.Strava.CLIENT_ID}&redirect_uri=http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:write,activity:read_all";
 
             Console.WriteLine($"Attempting to access {targetAuthUrl}");
 
@@ -195,6 +224,30 @@ namespace StravaStatisticsAnalyzerConsole
                 presenter.PresentResults(results,new (DateTime? start, DateTime? end)[]{(start, end)});
                 Console.WriteLine();
             }
+        }
+
+        private static int RunModifyAndReturnExitCode(ModifyOptions opts)
+        {
+            string token = null;
+            token = Authenticate();
+            stravaClient_.Initialize(token);
+
+            if(opts.Id.HasValue)
+            {
+                bool? commute = null;
+                if(String.Compare(opts.Commute, "true", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                {
+                    commute = true;
+                }
+                else if(String.Compare(opts.Commute, "false", CultureInfo.InvariantCulture, CompareOptions.IgnoreCase) == 0)
+                {
+                    commute = false;
+                }
+                var task = stravaClient_.ModifyActivity(opts.Id.Value, commute, opts.Description, opts.Name);
+                task.Wait();
+                return 0;
+            }
+            return 1;
         }
     }   
 }

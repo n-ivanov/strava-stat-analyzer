@@ -9,18 +9,18 @@ namespace ExtendedStravaClient
 {
     public class Client
     {
-        Fetcher fetcher_;
+        StravaFacade stravaFacade_;
         IDBFacade dbFacade_;
         private static List<long> insertedIds_;
         public Client(IDBFacade facade)
         {
-            fetcher_ = new Fetcher();
+            stravaFacade_ = new StravaFacade();
             dbFacade_ = facade;
         }
 
         public bool Initialize(string accessToken)
         {
-            fetcher_.Initialize(accessToken);
+            stravaFacade_.Initialize(accessToken);
             return dbFacade_.Initialize();
         }
 
@@ -31,13 +31,13 @@ namespace ExtendedStravaClient
             {
                 lastUpdate = 1534982400;
             }
-            var activities = await fetcher_.GetAllActivities(null, lastUpdate);
+            var activities = await stravaFacade_.GetAllActivities(null, lastUpdate);
             await InsertActivities(activities, getDetailedActivityInformation);
         }
 
         public async Task GetAndSaveActivities(DateTime? startInterval, DateTime? endInterval, bool getDetailedActivityInformation = true)
         {
-            var activities = await fetcher_.GetAllActivities(startInterval.ToEpoch(), endInterval.ToEpoch());
+            var activities = await stravaFacade_.GetAllActivities(startInterval.ToEpoch(), endInterval.ToEpoch());
             await InsertActivities(activities, getDetailedActivityInformation);
         }
 
@@ -54,7 +54,7 @@ namespace ExtendedStravaClient
             }
             foreach(var activityId in activityIds)
             {
-                var detailedActivity = await fetcher_.GetDetailedActivity(activityId);
+                var detailedActivity = await stravaFacade_.GetDetailedActivity(activityId);
                 if(detailedActivity == null)
                 {
                     Console.WriteLine("Unable to fetch detailed activity. Aborting insertions...");
@@ -80,25 +80,36 @@ namespace ExtendedStravaClient
             }
         }
 
-        public async Task UpdateActivities()
+        public async Task ReloadActivities()
         {
             var activitIds = dbFacade_.ActivityIds;
             foreach(var activityId in activitIds)
             {
-                await UpdateActivity(activityId);
+                await ReloadActivity(activityId);
             }
-            Console.WriteLine($"Successfully updated {activitIds.Count} activities.");
+            Console.WriteLine($"Successfully reloaded {activitIds.Count} activities.");
         }
 
-        public async Task UpdateActivity(long activityId)
+        public async Task ReloadActivity(long activityId)
         {
-            var detailedActivity = await fetcher_.GetDetailedActivity(activityId, false);
+            var detailedActivity = await stravaFacade_.GetDetailedActivity(activityId, false);
             if(detailedActivity == null)
             {
-                Console.WriteLine("Unable to fetch detailed activity. Aborting update...");
+                Console.WriteLine("Unable to fetch detailed activity. Aborting reload...");
                 return;
             }
             dbFacade_.Update(detailedActivity);
+        }
+
+        public async Task ModifyActivity(long activityId, bool? commute, string description, string name)
+        {
+            var modifiedActivity = await stravaFacade_.ModifyActivity(activityId, commute, description, name);
+            if(modifiedActivity == null)
+            {
+                Console.WriteLine("Unable to fetch modified activity. Aborting update...");
+                return;
+            }
+            dbFacade_.Update(modifiedActivity);
         }
 
         public Dictionary<string,List<IRideEffortAnalysis>> AnalyzeRide(string rideName, int[] intervals)

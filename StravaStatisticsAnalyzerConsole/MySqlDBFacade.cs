@@ -40,7 +40,7 @@ namespace StravaStatisticsAnalyzerConsole
             Console.WriteLine("Closing connection...");
         }
 
-        #region Fetcher 
+        #region StravaFacade 
 
         public int GetLastUpdate()
         {
@@ -331,7 +331,51 @@ namespace StravaStatisticsAnalyzerConsole
 
         public bool Update(Activity activity)
         {
-            throw new NotImplementedException($"{nameof(MySqlDBFacade)}.{nameof(Update)} has not been implemented.");
+            return UpdateObjectInTable(Configuration.MySQL.Tables.Activity.NAME, $"id={activity.Id}", 
+                new Dictionary<string, string>()
+                {
+                    {"commute",activity.Commute ? "1" : "0"},
+                    {"name",activity.Name},
+                    {"description",activity.Description},
+                });
+        }
+
+        private bool UpdateObjectInTable(string tableName, string whereCondition, Dictionary<string,string> cols)
+        {
+            using(var connection = new MySqlConnection(connectionString_))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                var columns = String.Join(",", cols.Keys);
+                var columnsAsParams =$"@{String.Join(", @", cols.Keys)}";
+                StringBuilder sb = new StringBuilder();
+                sb.Append($"UPDATE {tableName} SET ");
+                foreach(var kvp in cols)
+                {
+                    sb.Append($"{kvp.Key}=@{kvp.Key},");
+                    command.Parameters.AddWithValue($"{kvp.Key}", kvp.Value);
+                }
+                sb.Length--;
+                sb.Append($" WHERE {whereCondition}");
+                command.CommandText = sb.ToString();
+                try
+                {
+                    if(command.ExecuteNonQuery() > 0)
+                    {
+                        return true;
+                    }
+                    Console.WriteLine($"Unable to update {tableName}.");
+                }
+                catch(MySqlException ex)
+                {
+                    Console.WriteLine($"Unable to update {tableName}.");
+                    Console.WriteLine(command.ToString());
+                    Console.WriteLine(command.CommandText);
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);                    
+                }
+                return false;
+            }
         }
 
         private bool InsertObjects<T>(List<T> objs, Func<T,bool> insertFunc, HashSet<long> existingObjs) where T : IStravaObject
