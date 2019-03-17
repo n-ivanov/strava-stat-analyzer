@@ -4,27 +4,32 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ExtendedStravaClient.Weather;
 
 namespace ExtendedStravaClient
 {
     public class Client
     {
         StravaFacade stravaFacade_;
+        WeatherClient weatherClient_;
         IDBFacade dbFacade_;
         private static List<long> insertedIds_;
+
         public Client(IDBFacade facade)
         {
             stravaFacade_ = new StravaFacade();
             dbFacade_ = facade;
+            weatherClient_ = new WeatherClient();
         }
 
-        public bool Initialize(string accessToken)
+        public bool Initialize(string stravaAccessToken, string weatherAccessKey = null)
         {
-            stravaFacade_.Initialize(accessToken);
+            stravaFacade_.Initialize(stravaAccessToken);
+            weatherClient_.Initialize(weatherAccessKey);
             return dbFacade_.Initialize();
         }
 
-        public async Task GetAndSaveNewActivities(bool getDetailedActivityInformation = true)
+        public async Task GetAndSaveNewActivities(bool getDetailedActivityInformation = true, bool addWeatherInformation = true)
         {
             var lastUpdate = dbFacade_.GetLastUpdate();
             if(lastUpdate == -1)
@@ -32,7 +37,7 @@ namespace ExtendedStravaClient
                 lastUpdate = 1534982400;
             }
             var activities = await stravaFacade_.GetAllActivities(null, lastUpdate);
-            await InsertActivities(activities, getDetailedActivityInformation);
+            await InsertActivities(activities, getDetailedActivityInformation, addWeatherInformation);
         }
 
         public async Task GetAndSaveActivities(DateTime? startInterval, DateTime? endInterval, bool getDetailedActivityInformation = true)
@@ -41,7 +46,7 @@ namespace ExtendedStravaClient
             await InsertActivities(activities, getDetailedActivityInformation);
         }
 
-        public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds = null)
+        public async Task GetAndSaveDetailedActivityInformation(List<long> activityIds = null, bool addWeatherInformation = true)
         {
             if(activityIds == null)
             {
@@ -59,6 +64,10 @@ namespace ExtendedStravaClient
                 {
                     Console.WriteLine("Unable to fetch detailed activity. Aborting insertions...");
                     break;
+                }
+                if(addWeatherInformation)
+                {
+                    await AddWeatherInformation(detailedActivity);
                 }
                 Console.WriteLine($"Saving detailed information for activity {detailedActivity.Id}...");
                 try
@@ -80,17 +89,17 @@ namespace ExtendedStravaClient
             }
         }
 
-        public async Task ReloadActivities()
+        public async Task ReloadActivities(bool addWeather = false)
         {
             var activitIds = dbFacade_.ActivityIds;
             foreach(var activityId in activitIds)
             {
-                await ReloadActivity(activityId);
+                await ReloadActivity(activityId, addWeather);
             }
             Console.WriteLine($"Successfully reloaded {activitIds.Count} activities.");
         }
 
-        public async Task ReloadActivity(long activityId)
+        public async Task ReloadActivity(long activityId, bool addWeather = false)
         {
             var detailedActivity = await stravaFacade_.GetDetailedActivity(activityId, false);
             if(detailedActivity == null)
@@ -98,7 +107,16 @@ namespace ExtendedStravaClient
                 Console.WriteLine("Unable to fetch detailed activity. Aborting reload...");
                 return;
             }
-            dbFacade_.Update(detailedActivity);
+            if(addWeather)
+            {
+                await AddWeatherInformation(detailedActivity);
+            }
+            if(!dbFacade_.Update(detailedActivity))
+            {
+                Console.WriteLine($"Failed to reload and update {detailedActivity.Name} on {detailedActivity.DateTime}.");
+                return;
+            }
+            Console.WriteLine($"Successfully reloaded and updated {detailedActivity.Name} ({detailedActivity.Id}) on {detailedActivity.DateTime}.");
         }
 
         public async Task ModifyActivity(long activityId, bool? commute, string description, string name)
@@ -165,12 +183,12 @@ namespace ExtendedStravaClient
             return result;
         }
 
-        private async Task InsertActivities(List<Activity> activities, bool getDetailedActivityInformation = true)
+        private async Task InsertActivities(List<Activity> activities, bool getDetailedActivityInformation = true, bool addWeatherInformation = true)
         {
             dbFacade_.Insert(activities);
             if(getDetailedActivityInformation)
             {
-                await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList());
+                await GetAndSaveDetailedActivityInformation(activities.Select(s => s.Id).ToList(), addWeatherInformation);
             }
             else
             {
@@ -200,5 +218,29 @@ namespace ExtendedStravaClient
                 results[kvp.Key].Add(new RideEffortAnalysis(kvp.Key, kvp.Value));
             }
         }
+
+
+        private async Task AddWeatherInformation(Activity detailedActivity)
+        {
+            var weatherDescription =  await weatherClient_.GetWeatherDescription(detailedActivity.Start_Latitude, 
+                detailedActivity.Start_Longitude, detailedActivity.DateTime.ToEpoch() + detailedActivity.Elapsed_Time / 2, "ca");
+            var existingDescription  = detailedActivity.Description;
+            var idx = existingDescription?.IndexOf($"--") ?? -1;
+            detailedActivity.Description = $"{(idx == -1 ? existingDescription : existingDescription.Substring(0,idx-1))}{Environment.NewLine}--{Environment.NewLine}{weatherDescription}";
+
+            var updatedActivity = await stravaFacade_.ModifyActivity(detailedActivity.Id, null, detailedActivity.Description);
+            if(updatedActivity == null)
+            {
+                Console.WriteLine($"Unable to update {detailedActivity.Name} ({detailedActivity.Id}) in Strava.");
+                return;
+            }
+            if(!dbFacade_.Update(detailedActivity))
+            {
+                Console.WriteLine($"Unable to update {detailedActivity.Name} ({detailedActivity.Id}) in the DB.");
+                return;
+            }
+        }
+
+        
     }
 }

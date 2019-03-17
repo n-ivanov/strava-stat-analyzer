@@ -51,6 +51,9 @@ namespace StravaStatisticsAnalyzerConsole
 
         [Option('i', "id", HelpText = "Strava ID for the ride that should be reloaded. Cannot be used in conjunction with date intervals or ride names.")]
         public long? Id {get;set;}
+
+        [Option('w', "weather", HelpText = "Add weather information during the load or reload.")]
+        public bool Weather {get;set;}
     }
 
     [Verb("modify", HelpText = "Modify loaded Strava rides")]
@@ -94,9 +97,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private static int RunLoadAndReturnExitCode(LoadOptions opts)
         {
-            string token = null;
-            token = Authenticate();
-            stravaClient_.Initialize(token);
+            InitalizeClient();
             Task task;
             if(!opts.Reload)
             {
@@ -113,15 +114,22 @@ namespace StravaStatisticsAnalyzerConsole
             {
                 if(opts.Id.HasValue)
                 {
-                    task = stravaClient_.ReloadActivity(opts.Id.Value);
+                    task = stravaClient_.ReloadActivity(opts.Id.Value, opts.Weather);
                 }
                 else
                 {
-                    task = stravaClient_.ReloadActivities();
+                    task = stravaClient_.ReloadActivities(opts.Weather);
                 }
             }
             task.Wait();  
             return 0;
+        }
+
+        private static void InitalizeClient(bool connectToStrava = true, bool connectToWeather = true)
+        {
+            string token = null;
+            token = Authenticate();
+            stravaClient_.Initialize(token, Configuration.DarkSky.CLIENT_SECRET);
         }
 
         private static string Authenticate()
@@ -181,7 +189,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private static int RunAnalyzeAndReturnExitCode(AnalyzeOptions opts)
         {
-            stravaClient_.Initialize(null);
+            InitalizeClient(false,false);
             if(opts.Intervals.Count() != 0)
             {
                 Analyze(opts.Rides, opts.Intervals);
@@ -228,10 +236,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private static int RunModifyAndReturnExitCode(ModifyOptions opts)
         {
-            string token = null;
-            token = Authenticate();
-            stravaClient_.Initialize(token);
-
+            InitalizeClient();
             if(opts.Id.HasValue)
             {
                 bool? commute = null;

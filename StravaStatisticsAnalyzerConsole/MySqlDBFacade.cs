@@ -27,11 +27,13 @@ namespace StravaStatisticsAnalyzerConsole
 
         public bool Initialize()
         {
-            insertedSegments_ = new HashSet<long>();
             if(InitializeConnection())
             {
                 return InitializeTables();
             }
+            insertedSegments_ = new HashSet<long>(SqlQuery<long>($"SELECT id FROM {Configuration.MySQL.Tables.Segment.NAME}",
+                "Unable to fetch segment IDs.",
+                r => r.GetInt64("id")));
             return false;
         }
 

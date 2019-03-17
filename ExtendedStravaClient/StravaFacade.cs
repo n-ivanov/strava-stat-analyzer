@@ -9,8 +9,7 @@ using RestSharp.Extensions;
 namespace ExtendedStravaClient
 {
     public class StravaFacade
-    {
-        private string accessToken_;
+    {  private string accessToken_;
         private RestClient restClient_;
         public StravaFacade()
         {
@@ -41,6 +40,7 @@ namespace ExtendedStravaClient
             return response.Data;
         }
 
+      
         public async Task<List<Activity>> GetActivities(int? before = null, int? after = null, int? page = null, int? pageSize = null)
         {
             var request = new RestRequest(Method.GET);
