@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using ExtendedStravaClient;
 using CommandLine;
+using CommandLine.Text;
 
 namespace StravaStatisticsAnalyzerConsole
 {
@@ -40,6 +41,30 @@ namespace StravaStatisticsAnalyzerConsole
 
         [Option('r', "rides", Separator = ',', HelpText = "Names of rides that should be analyzed.")]
         public IEnumerable<string> Rides {get; set;}
+
+        [Usage(ApplicationAlias= "dotnet run --project StravaStatisticsAnalyzerConsole.csproj --")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Analyze last n rides with a given name", new AnalyzeOptions()
+                {
+                    Intervals = new List<int>(){5},
+                    Rides = new List<string>(){"HFW"}
+                });
+                yield return new Example("Analyze last rides over several n intervals with given names", new AnalyzeOptions()
+                {
+                    Intervals = new List<int>(){5,30},
+                    Rides = new List<string>(){"HFW","WFH"}
+                });
+                yield return new Example("Analyze rides between two dates", new AnalyzeOptions()
+                {
+                    StartDateStr = "2019/05/05",
+                    EndDateStr = "2019/05/11",
+                    Rides = new List<string>(){"HFW","WFH"}
+                });
+            }
+        }
     }
 
 
@@ -49,11 +74,41 @@ namespace StravaStatisticsAnalyzerConsole
         [Option("reload", HelpText = "Reload the rides from Strava")]
         public bool Reload {get;set;}
 
+        [Option("reloadSegments", HelpText = "Reload the segments for each ride from Strava")]
+        public bool ReloadSegments {get;set;}
+
         [Option('i', "id", HelpText = "Strava ID for the ride that should be reloaded. Cannot be used in conjunction with date intervals or ride names.")]
         public long? Id {get;set;}
 
         [Option('w', "weather", HelpText = "Add weather information during the load or reload.")]
         public bool Weather {get;set;}
+
+        [Usage(ApplicationAlias= "dotnet run --project StravaStatisticsAnalyzerConsole.csproj --")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Load new rides since last update", new LoadOptions());
+                yield return new Example("Reload rides in given interval", new LoadOptions(){
+                    StartDateStr = "2019/05/05", 
+                    EndDateStr = "2019/05/11",
+                    Reload = true,
+                });
+                yield return new Example("Reload rides and segments in given interval with added weather information", new LoadOptions(){
+                    StartDateStr = "2019/05/05", 
+                    EndDateStr = "2019/05/11",
+                    Reload = true,
+                    Weather = true,
+                    ReloadSegments = true
+                });
+                yield return new Example("Reload ride with specific ID in given interval", new LoadOptions(){
+                    StartDateStr = "2019/05/05", 
+                    EndDateStr = "2019/05/11",
+                    Reload = true,
+                    Id = 2296595173
+                });
+            }
+        }
     }
 
     [Verb("modify", HelpText = "Modify loaded Strava rides")]
@@ -76,6 +131,34 @@ namespace StravaStatisticsAnalyzerConsole
 
         [Option('w', "weather", HelpText = "Add weather information to the description for the selected ride(s) if it is not already present.")]
         public bool Weather {get;set;}
+
+        [Usage(ApplicationAlias= "dotnet run --project StravaStatisticsAnalyzerConsole.csproj --")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Modify selected rides to be tagged as a Commute", new ModifyOptions()
+                {
+                    Commute = "true",
+                    Rides = new List<string>(){"HFW"}
+                });
+                yield return new Example("Rename selected rides", new ModifyOptions()
+                {
+                    Name = "Home From Work",
+                    Rides = new List<string>(){"HFW"}
+                });
+                yield return new Example("Add weather information to selected ride", new ModifyOptions()
+                {
+                    Weather = true,
+                    Id = 2296595173
+                });
+                yield return new Example("Change description for selected ride", new ModifyOptions()
+                {
+                    Description = "Some new description",
+                    Id = 2296595173
+                });
+            }
+        }
     }
 
     class Program
@@ -118,7 +201,7 @@ namespace StravaStatisticsAnalyzerConsole
                 }
                 else
                 {
-                    task = stravaClient_.ReloadActivities(opts.Weather);
+                    task = stravaClient_.ReloadActivities(null, opts.StartDate, opts.EndDate, opts.Weather, opts.ReloadSegments);
                 }
             }
             task.Wait();  
@@ -152,11 +235,6 @@ namespace StravaStatisticsAnalyzerConsole
 
             var returnedArgs = url.Substring(url.IndexOf("?") + 1).Split("&").Select(x => x.Split("=")).ToDictionary(x => x[0], x => x[1]);
 
-            foreach(var kvp in returnedArgs)
-            {
-                Console.WriteLine($"{kvp.Key}:{kvp.Value}");
-            }
-
             if(returnedArgs.TryGetValue("error", out var error))
             {
                 Console.WriteLine($"An error occurred. '{error}'");
@@ -181,7 +259,6 @@ namespace StravaStatisticsAnalyzerConsole
             responseReadTask.Wait();
             var responseText = responseReadTask.Result;
 
-            Console.WriteLine($"{responseText}");
             var deserializedResponse = AuthenticationResponse.Deserialize(responseText);
             Console.WriteLine($"Welcome {deserializedResponse.Athlete?.FirstName}! Your token is {deserializedResponse.AccessToken}.");
             return deserializedResponse.AccessToken;

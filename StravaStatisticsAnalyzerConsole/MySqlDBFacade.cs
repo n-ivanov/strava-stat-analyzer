@@ -166,7 +166,23 @@ namespace StravaStatisticsAnalyzerConsole
             return segmentsWithCount.Where(i => i.count >= averageCount).Select(i => i.id).ToList();
         }       
 
-        public List<IRideEffort> GetActivities(string activityName, int? maxInterval)
+        public List<long> GetActivityIds(string activityName, DateTime? start, DateTime? end)
+        {
+            if(activityName == null && !start.HasValue && !end.HasValue)
+            {
+                return ActivityIds;
+            }
+            return SqlQuery<long>(
+                $@"SELECT id FROM activity WHERE
+                    {(activityName != null ? $"name LIKE '{activityName}'" : "")}
+                    {(start.HasValue ? $" {(activityName != null ? "AND" : "")} date_time > '{start:yyyy-MM-dd HH:mm:ss}'" : "")}
+                    {(end.HasValue ? $" {(activityName != null || start.HasValue ? "AND" : "")}date_time < '{end:yyyy-MM-dd HH:mm:ss}'" : "")}",
+                $"Unable to read '{activityName}' activities",
+                (reader => reader.GetInt64("id"))
+            );
+        }
+
+        public List<IRideEffort> GetActivityEfforts(string activityName, int? maxInterval)
         {
             return SqlQuery<IRideEffort>(
                 $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' 
@@ -176,7 +192,7 @@ namespace StravaStatisticsAnalyzerConsole
             );
         }
 
-        public List<IRideEffort> GetActivities(string activityName, DateTime? start, DateTime? end)
+        public List<IRideEffort> GetActivityEfforts(string activityName, DateTime? start, DateTime? end)
         {
             return SqlQuery<IRideEffort>(
                 $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}'
@@ -382,7 +398,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private bool InsertObjects<T>(List<T> objs, Func<T,bool> insertFunc, HashSet<long> existingObjs) where T : IStravaObject
         {
-            foreach(var obj in objs.Where(o => !existingObjs.Contains(o.Id)))
+            foreach(var obj in objs.Where(o => existingObjs != null && !existingObjs.Contains(o.Id)))
             {
                 if(!insertFunc(obj))
                 {
@@ -508,7 +524,6 @@ namespace StravaStatisticsAnalyzerConsole
                     return false;
                 }
             }
-            Console.WriteLine($"Table '{tableName}' already exists.");
             return true;
         }
 

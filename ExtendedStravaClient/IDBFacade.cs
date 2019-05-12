@@ -24,8 +24,9 @@ namespace ExtendedStravaClient
 
         int GetLastUpdate();
         
-        List<IRideEffort> GetActivities(string activityName, int? maxInterval);
-        List<IRideEffort> GetActivities(string activityName, DateTime? start, DateTime? end);
+        List<long> GetActivityIds(string activityName, DateTime? start, DateTime? end);
+        List<IRideEffort> GetActivityEfforts(string activityName, int? maxInterval);
+        List<IRideEffort> GetActivityEfforts(string activityName, DateTime? start, DateTime? end);
         Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, int? maxInterval);
         Dictionary<string,List<IRideEffort>> GetSegmentEffortsForActivity(string activityName, DateTime? start, DateTime? end);
         List<long> GetSegmentIdsForActivity(string activityName);

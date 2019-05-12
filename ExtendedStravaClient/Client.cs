@@ -70,36 +70,21 @@ namespace ExtendedStravaClient
                     await AddWeatherInformation(detailedActivity);
                 }
                 Console.WriteLine($"Saving detailed information for activity {detailedActivity.Id}...");
-                try
-                {
-                    dbFacade_.Insert(detailedActivity.Segment_Efforts);
-                    dbFacade_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
-                }
-                catch(Exception ex)
-                {
-                    Console.WriteLine($"Unable to save information for activity {detailedActivity.Id}.");
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.StackTrace);
-                    if(ex.InnerException != null)
-                    {
-                        Console.WriteLine(ex.InnerException.Message);
-                        Console.WriteLine(ex.InnerException.StackTrace);
-                    }
-                }
+                AddSegments(detailedActivity);
             }
         }
 
-        public async Task ReloadActivities(bool addWeather = false)
+        public async Task ReloadActivities(string activityName = null, DateTime? start = null, DateTime? end = null, bool addWeather = false, bool reloadSegments = false)
         {
-            var activitIds = dbFacade_.ActivityIds;
+            var activitIds = dbFacade_.GetActivityIds(activityName, start, end);
             foreach(var activityId in activitIds)
             {
-                await ReloadActivity(activityId, addWeather);
+                await ReloadActivity(activityId, addWeather, reloadSegments);
             }
             Console.WriteLine($"Successfully reloaded {activitIds.Count} activities.");
         }
 
-        public async Task ReloadActivity(long activityId, bool addWeather = false)
+        public async Task ReloadActivity(long activityId, bool addWeather = false, bool reloadSegments = false)
         {
             var detailedActivity = await stravaFacade_.GetDetailedActivity(activityId, false);
             if(detailedActivity == null)
@@ -115,6 +100,11 @@ namespace ExtendedStravaClient
             {
                 Console.WriteLine($"Failed to reload and update {detailedActivity.Name} on {detailedActivity.DateTime}.");
                 return;
+            }
+            if(reloadSegments)
+            {
+                Console.WriteLine($"Reloading segment information for activity {detailedActivity.Id}...");
+                AddSegments(detailedActivity, reloadSegments);
             }
             Console.WriteLine($"Successfully reloaded and updated {detailedActivity.Name} ({detailedActivity.Id}) on {detailedActivity.DateTime}.");
         }
@@ -148,7 +138,7 @@ namespace ExtendedStravaClient
                 }
                 normalizedIntervals = intervals;
             }
-            var activities = dbFacade_.GetActivities(rideName, maxInterval);
+            var activities = dbFacade_.GetActivityEfforts(rideName, maxInterval);
             var results = new Dictionary<string,List<IRideEffortAnalysis>>();
             
             results[rideName] = new List<IRideEffortAnalysis>(); 
@@ -197,11 +187,34 @@ namespace ExtendedStravaClient
             }
         }
 
+        private void AddSegments(Activity detailedActivity, bool reloadSegments = false)
+        {
+            try
+            {
+                dbFacade_.Insert(detailedActivity.Segment_Efforts);
+                if(reloadSegments)
+                {
+                    dbFacade_.Insert(detailedActivity.Segment_Efforts.Select(e => e.Segment).ToList());
+                }
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Unable to save information for activity {detailedActivity.Id}.");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+                if(ex.InnerException != null)
+                {
+                    Console.WriteLine(ex.InnerException.Message);
+                    Console.WriteLine(ex.InnerException.StackTrace);
+                }
+            }
+        }
+
 
         private void AddAnalyzedIntervalToResults(string rideName, DateTime? start, DateTime? end, 
             ref Dictionary<string,List<IRideEffortAnalysis>> results)
         {
-            var activities = dbFacade_.GetActivities(rideName, start, end);
+            var activities = dbFacade_.GetActivityEfforts(rideName, start, end);
             if(!results.ContainsKey(rideName))
             {
                 results[rideName] = new List<IRideEffortAnalysis>();                
