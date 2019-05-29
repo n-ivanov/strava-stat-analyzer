@@ -463,13 +463,23 @@ namespace StravaStatisticsAnalyzerConsole
             Console.WriteLine("Initializing connection...");
             try 
             {
+                var server = Program.Configuration["mySQL"]["server"];
+                var uid = Program.Configuration["mySQL"]["uid"];
+                var password = Program.Configuration["mySQL"]["password"];
+                var database = Program.Configuration["mySQL"]["database"];
                 connectionString_ = 
-                    $"server={Configuration.MySQL.SERVER};uid={Configuration.MySQL.UID};pwd={Configuration.MySQL.PASSWORD};database={Configuration.MySQL.DATABASE}";
+                    $"server={server};uid={uid};pwd={password};database={database}";
                 return true;
             }
             catch(MySqlException ex)
             {
                 Console.WriteLine($"Unable to connect with connection string {connectionString_}");
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Unable to connect.");
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }

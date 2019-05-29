@@ -4,21 +4,8 @@ namespace StravaStatisticsAnalyzerConsole
 {
     internal static class Configuration
     {
-        internal static class Strava 
-        {
-            public const int CLIENT_ID = -1; //<YOUR STRAVA CLIENT ID>
-            public const string CLIENT_SECRET = "YOUR STRAVA CLIENT SECRET";
-            public const int LOCAL_SERVER_PORT = 5001;
-        }
-
-
         public static class MySQL
         {
-            public const string SERVER = "127.0.0.1";
-            public const string UID = "nivanov";
-            public const string PASSWORD = "admin";
-            public const string DATABASE = "strava";
-
             public static class Tables
             {
                 public static class Activity
@@ -42,7 +29,7 @@ namespace StravaStatisticsAnalyzerConsole
                             {"start_longitude","DOUBLE"},
                             {"end_latitude","DOUBLE"},
                             {"end_longitude","DOUBLE"},
-                            {"description", "VARCHAR(255)"},
+                            {"description", "VARCHAR(1096)"},
                             {"commute", "BOOL"},
                         };
                 }

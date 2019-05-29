@@ -2,13 +2,16 @@
 using System.Collections.Generic; 
 using System.Extensions;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using ExtendedStravaClient;
 using CommandLine;
 using CommandLine.Text;
+using Newtonsoft.Json;
 
 namespace StravaStatisticsAnalyzerConsole
 {
@@ -166,9 +169,11 @@ namespace StravaStatisticsAnalyzerConsole
         static readonly HttpClient client_ = new HttpClient();
         static readonly MySqlDBFacade dbFacade_ = new MySqlDBFacade();
         static Client stravaClient_ = new Client(dbFacade_);
+        public static IDictionary<string, IDictionary<string,string>> Configuration {get;set;}
 
         static void Main(string[] args)
         {
+            Configuration = GenerateConfigs();
             Parser.Default.ParseArguments<LoadOptions,AnalyzeOptions,ModifyOptions>(args)
                 .MapResult(
                     (LoadOptions loadOpts) => RunLoadAndReturnExitCode(loadOpts),
@@ -176,11 +181,23 @@ namespace StravaStatisticsAnalyzerConsole
                     (ModifyOptions modifyOpts) => RunModifyAndReturnExitCode(modifyOpts),
                     (errs) => 1
                 );
-        } 
+        }
+
+        private static IDictionary<string, IDictionary<string, string>> GenerateConfigs()
+        {
+            string path = "config.json";
+            if(!File.Exists(path))
+            {
+                Console.WriteLine($"Config file '{path}' could not be found.");
+            }
+
+            string configText = File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<IDictionary<string, IDictionary<string, string>>>(configText);
+        }
 
         private static int RunLoadAndReturnExitCode(LoadOptions opts)
         {
-            InitalizeClient();
+            InitializeClient();
             Task task;
             if(!opts.Reload)
             {
@@ -208,21 +225,24 @@ namespace StravaStatisticsAnalyzerConsole
             return 0;
         }
 
-        private static void InitalizeClient(bool connectToStrava = true, bool connectToWeather = true)
+        private static void InitializeClient(bool connectToStrava = true, bool connectToWeather = true)
         {
             string token = null;
             token = Authenticate();
-            stravaClient_.Initialize(token, Configuration.DarkSky.CLIENT_SECRET);
+            stravaClient_.Initialize(token, Configuration["darkSky"]["clientSecret"]);
         }
 
         private static string Authenticate()
         {
             var listener = new HttpListener();
-            listener.Prefixes.Add($"http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}/");
+            var localServerPort = Configuration["strava"]["localServerPort"];
+            var clientId = Configuration["strava"]["clientId"];
+            var clientSecret = Configuration["strava"]["clientSecret"];
+            listener.Prefixes.Add($"http://localhost:{localServerPort}/");
             listener.Start();
 
             var targetAuthUrl =  
-                $"https://www.strava.com/oauth/authorize?client_id={Configuration.Strava.CLIENT_ID}&redirect_uri=http://localhost:{Configuration.Strava.LOCAL_SERVER_PORT}&response_type=code&approval_prompt=auto&scope=activity:write,activity:read_all";
+                $"https://www.strava.com/oauth/authorize?client_id={clientId}&redirect_uri=http://localhost:{localServerPort}&response_type=code&approval_prompt=auto&scope=activity:write,activity:read_all";
 
             Console.WriteLine($"Attempting to access {targetAuthUrl}");
 
@@ -244,8 +264,8 @@ namespace StravaStatisticsAnalyzerConsole
 
             var requestVals = new Dictionary<string,string>
             {
-                {"client_id", Configuration.Strava.CLIENT_ID.ToString()},
-                {"client_secret", Configuration.Strava.CLIENT_SECRET},
+                {"client_id", clientId},
+                {"client_secret", clientSecret},
                 {"code",returnedArgs["code"]},
                 {"grant_type","authorization_code"}
             };
@@ -266,7 +286,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private static int RunAnalyzeAndReturnExitCode(AnalyzeOptions opts)
         {
-            InitalizeClient(false,false);
+            InitializeClient(false,false);
             if(opts.Intervals.Count() != 0)
             {
                 Analyze(opts.Rides, opts.Intervals);
@@ -313,7 +333,7 @@ namespace StravaStatisticsAnalyzerConsole
 
         private static int RunModifyAndReturnExitCode(ModifyOptions opts)
         {
-            InitalizeClient();
+            InitializeClient();
             if(opts.Id.HasValue)
             {
                 bool? commute = null;

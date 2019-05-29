@@ -1,0 +1,19 @@
+{
+    "strava":
+    {
+        "clientId": "0",
+        "clientSecret": "",
+        "localServerPort": "5001"
+    },
+    "darkSky":
+    {
+        "clientSecret": ""
+    },
+    "mySQL":
+    {
+        "server": "127.0.0.1",
+        "uid": "nivanov",
+        "password": "admin",
+        "database": "strava"
+    }
+}

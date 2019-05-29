@@ -15,10 +15,6 @@ namespace ExtendedStravaClient
         [JsonProperty("athlete")]
         public StravaAthlete Athlete {get; private set;}
 
-
-        [JsonExtensionData]
-        private IDictionary<string, JToken> _additionalData;
-
         public static AuthenticationResponse Deserialize(string json)
         {
             return JsonConvert.DeserializeObject<AuthenticationResponse>(json);

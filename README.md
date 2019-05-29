@@ -274,4 +274,4 @@ The __--description__ (__-d__) and __--name__ (__-n__) arguments can be used to 
 
 ### Work in Progress
 
-A web interface based on ASP.NET and the EntityFramework is in the works, but has no been completed.
+A web interface based on ASP.NET and the EntityFramework is in the works, but has not been completed.
