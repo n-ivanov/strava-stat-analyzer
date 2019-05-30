@@ -158,11 +158,15 @@ namespace StravaStatisticsAnalyzerConsole
             var segmentsWithCount = SqlQuery<(long id, int count)>(
                 $@"SELECT id,count FROM  
                     ((SELECT segment_id AS id,count(*) AS count FROM segment_effort WHERE activity_id IN 
-                        (SELECT id from activity WHERE name like '{activityName}'
+                        (SELECT id from activity WHERE name like @activityname
                     )
                     group by segment_id) as segment_by_count) ORDER BY count DESC;",
-                $"Unable to fetch segments for '{activityName}'",
-                (reader => (reader.GetInt64("id"), reader.GetInt32("count")))
+                $"Unable to fetch segments for @activityname",
+                (reader => (reader.GetInt64("id"), reader.GetInt32("count"))),
+                new List<(string param, object val)>()
+                {
+                    ("@activityname", activityName)
+                }
             );
             var averageCount = segmentsWithCount.Select(i => i.count).Average();
             return segmentsWithCount.Where(i => i.count >= averageCount).Select(i => i.id).ToList();
@@ -176,36 +180,50 @@ namespace StravaStatisticsAnalyzerConsole
             }
             return SqlQuery<long>(
                 $@"SELECT id FROM activity WHERE
-                    {(activityName != null ? $"name LIKE '{activityName}'" : "")}
+                    {(activityName != null ? $"name LIKE @activityname" : "")}
                     {(start.HasValue ? $" {(activityName != null ? "AND" : "")} date_time > '{start:yyyy-MM-dd HH:mm:ss}'" : "")}
                     {(end.HasValue ? $" {(activityName != null || start.HasValue ? "AND" : "")}date_time < '{end:yyyy-MM-dd HH:mm:ss}'" : "")}",
                 $"Unable to read '{activityName}' activities",
-                (reader => reader.GetInt64("id"))
+                (reader => reader.GetInt64("id")),
+                activityName != null ? 
+                    new List<(string param, object val)>()
+                    {
+                        ("@activityname",activityName)
+                    } : 
+                    null
             );
         }
 
         public List<IRideEffort> GetActivityEfforts(string activityName, int? maxInterval)
         {
             return SqlQuery<IRideEffort>(
-                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}' 
+                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE @activityname 
                     ORDER BY date_time DESC {(maxInterval.HasValue ? $"LIMIT {maxInterval.Value}" : "")}",
                 $"Unable to read '{activityName}' activities",
-                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")))
+                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time"))),
+                new List<(string param, object val)>()
+                {
+                    ("@activityname", activityName)
+                }
             );
         }
 
         public List<IRideEffort> GetActivityEfforts(string activityName, DateTime? start, DateTime? end)
         {
             return SqlQuery<IRideEffort>(
-                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE '{activityName}'
+                $@"SELECT id,avg_speed,moving_time,date_time FROM activity WHERE name LIKE @activityname
                     {(start.HasValue ? $" AND date_time > '{start:yyyy-MM-dd HH:mm:ss}'" : "")}
                     {(end.HasValue ? $" AND date_time < '{end:yyyy-MM-dd HH:mm:ss}'" : "")}",
                 $"Unable to read '{activityName}' activities",
-                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time")))
+                (reader => new RideEffort(reader.GetInt64("id"), reader.GetDouble("avg_speed"), reader.GetInt32("moving_time"),reader.GetDateTime("date_time"))),
+                new List<(string param, object val)>()
+                {
+                    ("@activityname", activityName),
+                }
             );
         }
 
-        private List<T> SqlQuery<T>(string commandText, string errorMessage, Func<MySqlDataReader,T> createElementFunc)
+        private List<T> SqlQuery<T>(string commandText, string errorMessage, Func<MySqlDataReader,T> createElementFunc, List<(string param, object val)> parameters = null)
         {
             var list = new List<T>();
             using(var connection = new MySqlConnection(connectionString_))
@@ -213,6 +231,13 @@ namespace StravaStatisticsAnalyzerConsole
                 connection.Open();
                 var command = connection.CreateCommand();
                 command.CommandText = commandText;
+                if(parameters != null)
+                {
+                    foreach(var parameter in parameters)
+                    {
+                        command.Parameters.AddWithValue(parameter.param, parameter.val);
+                    }
+                }
                 try
                 {
                     using(var reader = command.ExecuteReader())
@@ -235,7 +260,8 @@ namespace StravaStatisticsAnalyzerConsole
         }
 
         private Dictionary<TKey,TValue> SqlQuery<TKey,TValue>(string commandText, string errorMessage, 
-            Func<MySqlDataReader,TKey> createKeyFunc, Func<MySqlDataReader,TValue> createValueFunc)
+            Func<MySqlDataReader,TKey> createKeyFunc, Func<MySqlDataReader,TValue> createValueFunc,
+            List<(string param, object val)> parameters = null)
         {
             var dict = new Dictionary<TKey,TValue> ();
             using(var connection = new MySqlConnection(connectionString_))
@@ -243,6 +269,13 @@ namespace StravaStatisticsAnalyzerConsole
                 connection.Open();
                 var command = connection.CreateCommand();
                 command.CommandText = commandText;
+                if(parameters != null)
+                {
+                    foreach(var parameter in parameters)
+                    {
+                        command.Parameters.AddWithValue(parameter.param, parameter.val);
+                    }
+                }
                 try 
                 {
                     using(var reader = command.ExecuteReader())
