@@ -167,7 +167,7 @@ namespace StravaStatisticsAnalyzerConsole
     class Program
     {
         static readonly HttpClient client_ = new HttpClient();
-        static readonly MySqlDBFacade dbFacade_ = new MySqlDBFacade();
+        static readonly DBFacade dbFacade_ = new DBFacade();
         static Client stravaClient_ = new Client(dbFacade_);
         public static IDictionary<string, IDictionary<string,string>> Configuration {get;set;}
 

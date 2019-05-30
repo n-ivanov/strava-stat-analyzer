@@ -8,7 +8,9 @@ using ExtendedStravaClient;
 
 namespace StravaStatisticsAnalyzerConsole
 {
-    internal class MySqlDBFacade : IDBFacade
+    // TODO - change to use stored proc where possible
+    // TODO - change to use parameters to protect against SQLInjections 
+    internal class DBFacade : IDBFacade
     {
         private string connectionString_;
         private bool createNewTables_= false;
